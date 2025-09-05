@@ -1,6 +1,5 @@
 import { commandRegistry, type CommandContext } from './command-registry.js';
 import { storage } from '../storage.js';
-import { loadAntideleteConfig, saveAntideleteConfig } from './antidelete-service.js';
 
 // TREKKER-MD Essential Commands
 console.log('✅ Enhanced commands loaded successfully');
@@ -100,55 +99,6 @@ commandRegistry.register({
     commandsList += `> Powered by TREKKER-MD Team`;
     
     await respond(commandsList);
-  }
-});
-
-// Antidelete Command
-commandRegistry.register({
-  name: 'antdelete',
-  aliases: ['antidelete', 'ad'],
-  description: 'Enable/disable message deletion detection',
-  category: 'ADMIN',
-  handler: async (context: CommandContext) => {
-    const { respond, args, message, client } = context;
-    
-    // Check if user is bot owner
-    if (!message.key.fromMe) {
-      return await respond('*Only the bot owner can use this command.*');
-    }
-
-    // Get bot instance ID from the client - this requires the bot instance ID to be available
-    // We'll need to pass this from the WhatsApp bot when creating the context
-    const botInstanceId = (client as any).botInstanceId;
-    if (!botInstanceId) {
-      return await respond('*Error: Bot instance not found.*');
-    }
-
-    try {
-      const config = await loadAntideleteConfig(botInstanceId);
-      const match = args[0]?.toLowerCase();
-
-      if (!match) {
-        return await respond(
-          `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}\n\n*.antdelete on* - Enable\n*.antdelete off* - Disable`
-        );
-      }
-
-      if (match === 'on') {
-        const newConfig = { enabled: true };
-        await saveAntideleteConfig(botInstanceId, newConfig);
-        await respond('*✅ Antidelete enabled*\n\nDeleted messages will now be reported to you.');
-      } else if (match === 'off') {
-        const newConfig = { enabled: false };
-        await saveAntideleteConfig(botInstanceId, newConfig);
-        await respond('*❌ Antidelete disabled*\n\nDeleted messages will no longer be monitored.');
-      } else {
-        await respond('*Invalid command.*\n\nUse:\n*.antdelete on* - Enable\n*.antdelete off* - Disable');
-      }
-    } catch (error) {
-      console.error('Antidelete command error:', error);
-      await respond('*Error updating antidelete settings. Please try again.*');
-    }
   }
 });
 

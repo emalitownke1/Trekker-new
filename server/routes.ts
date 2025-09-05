@@ -666,10 +666,6 @@ Thank you for choosing TREKKER-MD! Your bot will remain active for ${expirationM
         autoViewStatus: req.body.autoViewStatus === 'true',
         autoReact: req.body.autoReact === 'true',
         chatgptEnabled: req.body.chatgptEnabled === 'true',
-        settings: {
-          antideleteEnabled: true, // Enable antidelete by default
-          ...((req.body.settings && typeof req.body.settings === 'string' ? JSON.parse(req.body.settings) : req.body.settings) || {})
-        }
       };
 
       const validatedData = insertBotInstanceSchema.parse(botData);
