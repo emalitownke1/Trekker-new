@@ -14,6 +14,7 @@ import { join } from 'path';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { commandRegistry, type CommandContext } from './command-registry.js';
 import './core-commands.js'; // Load core commands
+import { storeMessage, handleMessageRevocation } from './antidelete-service.js';
 
 export class WhatsAppBot {
   private sock: any;
@@ -167,7 +168,23 @@ export class WhatsAppBot {
       
       if (m.type === 'notify') {
         for (const message of m.messages) {
+          // Store message for antidelete functionality
+          await storeMessage(message);
           await this.handleMessage(message);
+        }
+      }
+    });
+
+    // Handle message deletions (protocol messages)
+    this.sock.ev.on('messages.upsert', async (m: { messages: WAMessage[], type: string }) => {
+      if (!this.isRunning) return;
+      
+      if (m.type === 'notify') {
+        for (const message of m.messages) {
+          // Check if this is a protocol message indicating message deletion
+          if (message.message?.protocolMessage?.type === proto.Message.ProtocolMessage.Type.REVOKE) {
+            await handleMessageRevocation(this.sock, message);
+          }
         }
       }
     });

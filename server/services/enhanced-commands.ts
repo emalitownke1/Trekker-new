@@ -1,5 +1,6 @@
 import { commandRegistry, type CommandContext } from './command-registry.js';
 import { storage } from '../storage.js';
+import { loadAntideleteConfig, saveAntideleteConfig } from './antidelete-service.js';
 
 // TREKKER-MD Essential Commands
 console.log('✅ Enhanced commands loaded successfully');
@@ -99,6 +100,43 @@ commandRegistry.register({
     commandsList += `> Powered by TREKKER-MD Team`;
     
     await respond(commandsList);
+  }
+});
+
+// Antidelete Command
+commandRegistry.register({
+  name: 'antdelete',
+  aliases: ['antidelete', 'ad'],
+  description: 'Enable/disable message deletion detection',
+  category: 'ADMIN',
+  handler: async (context: CommandContext) => {
+    const { respond, args, message } = context;
+    
+    // Check if user is bot owner
+    if (!message.key.fromMe) {
+      return await respond('*Only the bot owner can use this command.*');
+    }
+
+    const config = loadAntideleteConfig();
+    const match = args[0]?.toLowerCase();
+
+    if (!match) {
+      return await respond(
+        `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}\n\n*.antdelete on* - Enable\n*.antdelete off* - Disable`
+      );
+    }
+
+    if (match === 'on') {
+      const newConfig = { enabled: true };
+      saveAntideleteConfig(newConfig);
+      await respond('*✅ Antidelete enabled*\n\nDeleted messages will now be reported to you.');
+    } else if (match === 'off') {
+      const newConfig = { enabled: false };
+      saveAntideleteConfig(newConfig);
+      await respond('*❌ Antidelete disabled*\n\nDeleted messages will no longer be monitored.');
+    } else {
+      await respond('*Invalid command.*\n\nUse:\n*.antdelete on* - Enable\n*.antdelete off* - Disable');
+    }
   }
 });
 
