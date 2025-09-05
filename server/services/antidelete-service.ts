@@ -2,6 +2,8 @@ import fs from 'fs';
 import path from 'path';
 import { writeFile } from 'fs/promises';
 import { downloadContentFromMessage } from '@whiskeysockets/baileys';
+import { storage } from '../storage.js';
+import type { BotInstance } from '@shared/schema';
 
 // Types
 interface StoredMessage {
@@ -17,18 +19,13 @@ interface AntideleteConfig {
   enabled: boolean;
 }
 
-// Configuration and storage paths
-const CONFIG_PATH = path.join(process.cwd(), 'server/data/antidelete.json');
+// Storage paths
 const TEMP_MEDIA_DIR = path.join(process.cwd(), 'server/tmp');
 
 // In-memory message store
 const messageStore = new Map<string, StoredMessage>();
 
-// Ensure directories exist
-if (!fs.existsSync(path.dirname(CONFIG_PATH))) {
-    fs.mkdirSync(path.dirname(CONFIG_PATH), { recursive: true });
-}
-
+// Ensure temp directory exists
 if (!fs.existsSync(TEMP_MEDIA_DIR)) {
     fs.mkdirSync(TEMP_MEDIA_DIR, { recursive: true });
 }
@@ -70,31 +67,48 @@ export const cleanTempFolderIfLarge = (): void => {
     }
 };
 
-// Config management
-export const loadAntideleteConfig = (): AntideleteConfig => {
+// Config management - now uses database
+export const loadAntideleteConfig = async (botInstanceId: string): Promise<AntideleteConfig> => {
     try {
-        if (!fs.existsSync(CONFIG_PATH)) {
+        const botInstance = await storage.getBotInstance(botInstanceId);
+        if (!botInstance) {
             return { enabled: false };
         }
-        return JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf-8'));
+        
+        const settings = botInstance.settings as any || {};
+        return { enabled: settings.antideleteEnabled || false };
     } catch (error) {
         console.error('Error loading antidelete config:', error);
         return { enabled: false };
     }
 };
 
-export const saveAntideleteConfig = (config: AntideleteConfig): void => {
+export const saveAntideleteConfig = async (botInstanceId: string, config: AntideleteConfig): Promise<void> => {
     try {
-        fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+        const botInstance = await storage.getBotInstance(botInstanceId);
+        if (!botInstance) {
+            throw new Error('Bot instance not found');
+        }
+        
+        const currentSettings = (botInstance.settings as any) || {};
+        const updatedSettings = {
+            ...currentSettings,
+            antideleteEnabled: config.enabled
+        };
+        
+        await storage.updateBotInstance(botInstanceId, {
+            settings: updatedSettings
+        });
     } catch (err) {
         console.error('Config save error:', err);
+        throw err;
     }
 };
 
 // Message storage
-export const storeMessage = async (message: any): Promise<void> => {
+export const storeMessage = async (message: any, botInstanceId: string): Promise<void> => {
     try {
-        const config = loadAntideleteConfig();
+        const config = await loadAntideleteConfig(botInstanceId);
         if (!config.enabled) return; // Don't store if antidelete is disabled
 
         if (!message.key?.id) return;
@@ -173,9 +187,9 @@ export const storeMessage = async (message: any): Promise<void> => {
 };
 
 // Message deletion handler
-export const handleMessageRevocation = async (sock: any, revocationMessage: any): Promise<void> => {
+export const handleMessageRevocation = async (sock: any, revocationMessage: any, botInstanceId: string): Promise<void> => {
     try {
-        const config = loadAntideleteConfig();
+        const config = await loadAntideleteConfig(botInstanceId);
         if (!config.enabled) return;
 
         const messageId = revocationMessage.message.protocolMessage.key.id;

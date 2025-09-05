@@ -110,32 +110,44 @@ commandRegistry.register({
   description: 'Enable/disable message deletion detection',
   category: 'ADMIN',
   handler: async (context: CommandContext) => {
-    const { respond, args, message } = context;
+    const { respond, args, message, client } = context;
     
     // Check if user is bot owner
     if (!message.key.fromMe) {
       return await respond('*Only the bot owner can use this command.*');
     }
 
-    const config = loadAntideleteConfig();
-    const match = args[0]?.toLowerCase();
-
-    if (!match) {
-      return await respond(
-        `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}\n\n*.antdelete on* - Enable\n*.antdelete off* - Disable`
-      );
+    // Get bot instance ID from the client - this requires the bot instance ID to be available
+    // We'll need to pass this from the WhatsApp bot when creating the context
+    const botInstanceId = (client as any).botInstanceId;
+    if (!botInstanceId) {
+      return await respond('*Error: Bot instance not found.*');
     }
 
-    if (match === 'on') {
-      const newConfig = { enabled: true };
-      saveAntideleteConfig(newConfig);
-      await respond('*✅ Antidelete enabled*\n\nDeleted messages will now be reported to you.');
-    } else if (match === 'off') {
-      const newConfig = { enabled: false };
-      saveAntideleteConfig(newConfig);
-      await respond('*❌ Antidelete disabled*\n\nDeleted messages will no longer be monitored.');
-    } else {
-      await respond('*Invalid command.*\n\nUse:\n*.antdelete on* - Enable\n*.antdelete off* - Disable');
+    try {
+      const config = await loadAntideleteConfig(botInstanceId);
+      const match = args[0]?.toLowerCase();
+
+      if (!match) {
+        return await respond(
+          `*ANTIDELETE SETUP*\n\nCurrent Status: ${config.enabled ? '✅ Enabled' : '❌ Disabled'}\n\n*.antdelete on* - Enable\n*.antdelete off* - Disable`
+        );
+      }
+
+      if (match === 'on') {
+        const newConfig = { enabled: true };
+        await saveAntideleteConfig(botInstanceId, newConfig);
+        await respond('*✅ Antidelete enabled*\n\nDeleted messages will now be reported to you.');
+      } else if (match === 'off') {
+        const newConfig = { enabled: false };
+        await saveAntideleteConfig(botInstanceId, newConfig);
+        await respond('*❌ Antidelete disabled*\n\nDeleted messages will no longer be monitored.');
+      } else {
+        await respond('*Invalid command.*\n\nUse:\n*.antdelete on* - Enable\n*.antdelete off* - Disable');
+      }
+    } catch (error) {
+      console.error('Antidelete command error:', error);
+      await respond('*Error updating antidelete settings. Please try again.*');
     }
   }
 });

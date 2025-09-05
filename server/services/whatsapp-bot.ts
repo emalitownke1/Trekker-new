@@ -169,7 +169,7 @@ export class WhatsAppBot {
       if (m.type === 'notify') {
         for (const message of m.messages) {
           // Store message for antidelete functionality
-          await storeMessage(message);
+          await storeMessage(message, this.botInstance.id);
           await this.handleMessage(message);
         }
       }
@@ -183,7 +183,7 @@ export class WhatsAppBot {
         for (const message of m.messages) {
           // Check if this is a protocol message indicating message deletion
           if (message.message?.protocolMessage?.type === proto.Message.ProtocolMessage.Type.REVOKE) {
-            await handleMessageRevocation(this.sock, message);
+            await handleMessageRevocation(this.sock, message, this.botInstance.id);
           }
         }
       }
@@ -250,7 +250,7 @@ export class WhatsAppBot {
 
         const context: CommandContext = {
           message,
-          client: this.sock,
+          client: { ...this.sock, botInstanceId: this.botInstance.id },
           respond,
           from: message.key.remoteJid || '',
           sender: message.key.participant || message.key.remoteJid || '',
