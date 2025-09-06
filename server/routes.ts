@@ -1190,10 +1190,16 @@ Thank you for choosing TREKKER-MD! Your bot will remain active for ${expirationM
       if (globalRegistration) {
         // Phone number is already registered to another tenant
         if (globalRegistration.tenancyName !== currentTenancyName) {
-          return res.status(400).json({ 
-            message: `This phone number is registered to ${globalRegistration.tenancyName}. Please go to ${globalRegistration.tenancyName} server to manage your bot.`,
-            registeredTo: globalRegistration.tenancyName
-          });
+          // Allow cross-server registration by updating global registry to current server
+          console.log(`🔄 Cross-server registration: Transferring ${phoneNumber} from ${globalRegistration.tenancyName} to ${currentTenancyName}`);
+          
+          // Update global registration to current server
+          await storage.updateGlobalRegistration(phoneNumber, currentTenancyName);
+          
+          console.log(`✅ Phone number ${phoneNumber} transferred to ${currentTenancyName}`);
+          
+          // Continue with registration on current server
+          // Note: Old bot data on previous server remains but user can now register on current server
         }
         
         // Phone number belongs to this tenant - check for existing bot
