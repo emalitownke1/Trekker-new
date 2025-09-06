@@ -41,7 +41,7 @@ export const botInstances = pgTable("bot_instances", {
   credentials: jsonb("credentials"), // encrypted creds.json data
   settings: jsonb("settings").default({}), // bot configuration
   autoLike: boolean("auto_like").default(false),
-  autoViewStatus: boolean("auto_view_status").default(false),
+  autoview: jsonb("autoview").default(JSON.stringify({ enabled: false, reactOn: false })),
   autoReact: boolean("auto_react").default(false),
   typingMode: text("typing_mode").default("none"), // none, typing, recording, both
   chatgptEnabled: boolean("chatgpt_enabled").default(false),
