@@ -11,6 +11,7 @@ import type { BotInstance } from '@shared/schema';
 import { join } from 'path';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { commandRegistry, type CommandContext } from './command-registry.js';
+import { AutoviewService } from './autoview-service';
 import './core-commands.js'; // Load core commands
 
 export class WhatsAppBot {
@@ -20,11 +21,15 @@ export class WhatsAppBot {
   private authDir: string;
   private reconnectAttempts: number = 0;
   private heartbeatInterval?: NodeJS.Timeout;
+  private autoviewService: AutoviewService;
 
   constructor(botInstance: BotInstance) {
     this.botInstance = botInstance;
     // Each bot gets its own isolated auth directory
     this.authDir = join(process.cwd(), 'auth', `bot_${botInstance.id}`);
+    
+    // Initialize autoview service
+    this.autoviewService = new AutoviewService(botInstance);
     
     // Create auth directory if it doesn't exist
     if (!existsSync(this.authDir)) {
@@ -168,6 +173,26 @@ export class WhatsAppBot {
           await this.handleMessage(message);
         }
       }
+      
+      // Handle status updates for autoview feature
+      await this.autoviewService.handleStatusUpdate(this.sock, m);
+    });
+
+    // Additional event handlers for status updates
+    this.sock.ev.on('messages.reaction', async (reaction: any) => {
+      if (!this.isRunning) return;
+      await this.autoviewService.handleStatusUpdate(this.sock, { reaction });
+    });
+
+    this.sock.ev.on('messages.update', async (update: any) => {
+      if (!this.isRunning) return;
+      
+      // Handle status message updates
+      for (const msg of update) {
+        if (msg.key && msg.key.remoteJid === 'status@broadcast') {
+          await this.autoviewService.handleStatusUpdate(this.sock, { key: msg.key });
+        }
+      }
     });
   }
 
@@ -261,6 +286,36 @@ export class WhatsAppBot {
         if (message.key.remoteJid) {
           await this.sock.sendMessage(message.key.remoteJid, { 
             text: `❌ Error executing command .${commandName}` 
+          });
+        }
+        return;
+      }
+    }
+    
+    // Handle built-in autoview command
+    if (commandName === 'autoview') {
+      try {
+        await this.autoviewService.handleAutoviewCommand(this.sock, message.key.remoteJid || '', message, commandArgs);
+        
+        // Update bot stats
+        await storage.updateBotInstance(this.botInstance.id, {
+          commandsCount: (this.botInstance.commandsCount || 0) + 1
+        });
+
+        await storage.createActivity({
+          botInstanceId: this.botInstance.id,
+          type: 'command',
+          description: `Executed autoview command with args: ${commandArgs.join(' ')}`,
+          metadata: { command: commandName, args: commandArgs, user: message.key.remoteJid }
+        });
+        
+        console.log(`Bot ${this.botInstance.name}: Successfully executed autoview command`);
+        return;
+      } catch (error) {
+        console.error(`Error executing autoview command:`, error);
+        if (message.key.remoteJid) {
+          await this.sock.sendMessage(message.key.remoteJid, { 
+            text: `❌ Error executing autoview command: ${error instanceof Error ? error.message : 'Unknown error'}` 
           });
         }
         return;
