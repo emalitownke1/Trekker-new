@@ -1,4 +1,5 @@
-import { makeWASocket, useMultiFileAuthState, DisconnectReason, ConnectionState, WAMessage } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState, DisconnectReason, proto } from '@whiskeysockets/baileys';
+import type { WAProto } from '@whiskeysockets/baileys';
 import { join } from 'path';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { Boom } from '@hapi/boom';
@@ -86,7 +87,7 @@ export class ValidationBot {
           reject(new Error('Connection timeout'));
         }, 45000); // 45 second timeout
 
-        this.sock.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
+        this.sock.ev.on('connection.update', async (update: any) => {
           const { connection, lastDisconnect, qr } = update;
           
           console.log(`Validation bot ${this.phoneNumber}: Connection update -`, { connection, qr: !!qr });

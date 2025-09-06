@@ -1,11 +1,9 @@
 import makeWASocket, { 
   DisconnectReason, 
-  ConnectionState, 
   useMultiFileAuthState,
-  WAMessage,
-  BaileysEventMap,
   proto
 } from '@whiskeysockets/baileys';
+import type { WAProto } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { storage } from '../storage';
 import { generateChatGPTResponse } from './openai';
@@ -67,7 +65,7 @@ export class WhatsAppBot {
   }
 
   private async setupEventHandlers() {
-    this.sock.ev.on('connection.update', async (update: Partial<ConnectionState>) => {
+    this.sock.ev.on('connection.update', async (update: any) => {
       const { connection, lastDisconnect, qr } = update;
       
       console.log(`Bot ${this.botInstance.name}: Connection update -`, { connection, qr: !!qr });
@@ -159,7 +157,7 @@ export class WhatsAppBot {
       // Only mark as online when connection is explicitly 'open' - not based on user.id alone
     });
 
-    this.sock.ev.on('messages.upsert', async (m: { messages: WAMessage[], type: string }) => {
+    this.sock.ev.on('messages.upsert', async (m: { messages: WAProto.IWebMessageInfo[], type: string }) => {
       // Only process messages if the bot is actually running and connected
       if (!this.isRunning) {
         return;
@@ -173,7 +171,7 @@ export class WhatsAppBot {
     });
   }
 
-  private async handleMessage(message: WAMessage) {
+  private async handleMessage(message: WAProto.IWebMessageInfo) {
     try {
       if (!message.message) return;
       
@@ -213,7 +211,7 @@ export class WhatsAppBot {
     }
   }
 
-  private async handleCommand(message: WAMessage, commandText: string) {
+  private async handleCommand(message: WAProto.IWebMessageInfo, commandText: string) {
     const commandPrefix = process.env.BOT_PREFIX || '.';
     const args = commandText.substring(commandPrefix.length).split(' ');
     const commandName = args[0].toLowerCase();
@@ -306,7 +304,7 @@ export class WhatsAppBot {
     }
   }
 
-  private async handleAutoFeatures(message: WAMessage) {
+  private async handleAutoFeatures(message: WAProto.IWebMessageInfo) {
     // Auto-react to messages
     if (this.botInstance.autoReact && message.key.remoteJid) {
       const reactions = ['👍', '❤️', '😊', '🔥', '👏'];
@@ -337,7 +335,7 @@ export class WhatsAppBot {
     }
   }
 
-  private async handleChatGPTResponse(message: WAMessage, messageText: string) {
+  private async handleChatGPTResponse(message: WAProto.IWebMessageInfo, messageText: string) {
     try {
       const response = await generateChatGPTResponse(
         messageText,
