@@ -2870,5 +2870,165 @@ Thank you for choosing TREKKER-MD! 🚀`;
     }
   });
 
+  // REST endpoint to expose entire UI panel
+  app.get("/api/ui", async (req, res) => {
+    try {
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      let htmlContent: string;
+      
+      if (process.env.NODE_ENV === "development") {
+        // In development, serve the index.html and let Vite handle the rest
+        const indexPath = path.resolve(__dirname, "../index.html");
+        htmlContent = await fs.readFile(indexPath, 'utf-8');
+        
+        // Inject base URL and ensure proper asset loading
+        htmlContent = htmlContent.replace(
+          '<head>',
+          `<head>
+          <base href="${req.protocol}://${req.get('host')}/">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">`
+        );
+      } else {
+        // In production, serve from the built dist directory
+        const distPath = path.resolve(__dirname, "public");
+        const indexPath = path.join(distPath, "index.html");
+        htmlContent = await fs.readFile(indexPath, 'utf-8');
+        
+        // Inject base URL for proper asset loading
+        htmlContent = htmlContent.replace(
+          '<head>',
+          `<head>
+          <base href="${req.protocol}://${req.get('host')}/">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">`
+        );
+      }
+      
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
+      res.send(htmlContent);
+    } catch (error) {
+      console.error('Error serving UI panel:', error);
+      res.status(500).json({ 
+        error: 'Failed to load UI panel',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // REST endpoint to get UI panel as embeddable iframe-ready content
+  app.get("/api/ui/embed", async (req, res) => {
+    try {
+      const embedHtml = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TREKKER-MD Bot Management Panel</title>
+  <style>
+    body, html { 
+      margin: 0; 
+      padding: 0; 
+      width: 100%; 
+      height: 100vh; 
+      overflow: hidden; 
+    }
+    iframe { 
+      width: 100%; 
+      height: 100%; 
+      border: none; 
+      display: block; 
+    }
+  </style>
+</head>
+<body>
+  <iframe src="${req.protocol}://${req.get('host')}/api/ui" 
+          title="TREKKER-MD Bot Management Panel"
+          allowfullscreen>
+  </iframe>
+</body>
+</html>`;
+      
+      res.setHeader('Content-Type', 'text/html');
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.send(embedHtml);
+    } catch (error) {
+      console.error('Error serving embeddable UI:', error);
+      res.status(500).json({ 
+        error: 'Failed to load embeddable UI',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // REST endpoint to get UI panel data as JSON (for programmatic access)
+  app.get("/api/ui/data", authenticateUser, async (req, res) => {
+    try {
+      // Get all dashboard data
+      const [botInstances, activities, serverInfo, dashboardStats, commands] = await Promise.all([
+        storage.getAllBotInstances(),
+        storage.getRecentActivities(50),
+        storage.getServerInfo(),
+        storage.getDashboardStats(),
+        storage.getAllCommands()
+      ]);
+
+      const uiData = {
+        dashboard: {
+          stats: dashboardStats,
+          serverInfo,
+        },
+        bots: botInstances.map(bot => ({
+          id: bot.id,
+          name: bot.name,
+          phoneNumber: bot.phoneNumber,
+          status: bot.status,
+          approvalStatus: bot.approvalStatus,
+          features: {
+            autoLike: bot.autoLike,
+            autoview: bot.autoview,
+            autoReact: bot.autoReact,
+            typingMode: bot.typingMode,
+            chatgptEnabled: bot.chatgptEnabled
+          },
+          metrics: {
+            messagesCount: bot.messagesCount,
+            commandsCount: bot.commandsCount
+          },
+          approvalDate: bot.approvalDate,
+          expirationMonths: bot.expirationMonths,
+          createdAt: bot.createdAt
+        })),
+        activities: activities,
+        commands: commands.map(cmd => ({
+          id: cmd.id,
+          name: cmd.name,
+          category: cmd.category,
+          description: cmd.description,
+          chatgptEnabled: cmd.chatgptEnabled
+        })),
+        metadata: {
+          timestamp: new Date().toISOString(),
+          serverName: getServerName(),
+          totalBots: botInstances.length,
+          activeBots: botInstances.filter(bot => bot.status === 'online').length
+        }
+      };
+
+      res.json(uiData);
+    } catch (error) {
+      console.error('Error getting UI data:', error);
+      res.status(500).json({ 
+        error: 'Failed to get UI data',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   return httpServer;
 }
