@@ -1385,7 +1385,7 @@ Thank you for choosing TREKKER-MD! Your bot will remain active for ${expirationM
         settings: { features: botFeatures },
         // Map features to individual columns
         autoLike: (botFeatures as any).autoLike || false,
-        autoViewStatus: (botFeatures as any).autoView || false,
+        autoview: (botFeatures as any).autoview || { enabled: false, reactOn: false },
         autoReact: (botFeatures as any).autoReact || false,
         typingMode: (botFeatures as any).typingIndicator ? 'typing' : 'none',
         chatgptEnabled: (botFeatures as any).chatGPT || false,

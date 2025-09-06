@@ -11,7 +11,7 @@ interface BotCardProps {
     phoneNumber?: string;
     status: string;
     autoLike: boolean;
-    autoViewStatus: boolean;
+    autoview?: { enabled?: boolean; reactOn?: boolean };
     autoReact: boolean;
     typingMode: string;
     chatgptEnabled: boolean;

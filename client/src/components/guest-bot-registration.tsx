@@ -28,7 +28,10 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
     features: {
       autoLike: false,
       autoReact: false,
-      autoView: false,
+      autoview: {
+        enabled: false,
+        reactOn: false
+      },
       typingIndicator: false,
       chatGPT: false
     }
@@ -423,22 +426,56 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
                       </div>
                     </div>
                     
-                    <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
-                      <Checkbox 
-                        id="autoView"
-                        data-testid="checkbox-auto-view"
-                        checked={formData.features.autoView}
-                        onCheckedChange={(checked) => 
-                          setFormData(prev => ({ 
-                            ...prev, 
-                            features: { ...prev.features, autoView: !!checked } 
-                          }))
-                        }
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor="autoView" className="text-sm font-medium cursor-pointer">Auto View Status</Label>
-                        <p className="text-xs text-muted-foreground mt-1">Automatically view WhatsApp status</p>
+                    <div className="col-span-1 md:col-span-2 space-y-3">
+                      <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
+                        <Checkbox 
+                          id="autoviewEnabled"
+                          data-testid="checkbox-autoview-enabled"
+                          checked={formData.features.autoview.enabled}
+                          onCheckedChange={(checked) => 
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              features: { 
+                                ...prev.features, 
+                                autoview: { 
+                                  ...prev.features.autoview, 
+                                  enabled: !!checked 
+                                }
+                              } 
+                            }))
+                          }
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor="autoviewEnabled" className="text-sm font-medium cursor-pointer">Auto View Status</Label>
+                          <p className="text-xs text-muted-foreground mt-1">Automatically view WhatsApp status updates</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/50">
+                        <Checkbox 
+                          id="autoviewReact"
+                          data-testid="checkbox-autoview-react"
+                          checked={formData.features.autoview.reactOn}
+                          onCheckedChange={(checked) => 
+                            setFormData(prev => ({ 
+                              ...prev, 
+                              features: { 
+                                ...prev.features, 
+                                autoview: { 
+                                  ...prev.features.autoview, 
+                                  reactOn: !!checked 
+                                }
+                              } 
+                            }))
+                          }
+                          className="mt-1"
+                          disabled={!formData.features.autoview.enabled}
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor="autoviewReact" className="text-sm font-medium cursor-pointer">Auto React to Status</Label>
+                          <p className="text-xs text-muted-foreground mt-1">Automatically react to status updates with 💚 emoji</p>
+                        </div>
                       </div>
                     </div>
                     
