@@ -12,6 +12,8 @@ import { join } from 'path';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { commandRegistry, type CommandContext } from './command-registry.js';
 import { AutoviewService } from './autoview-service';
+import { storeMessage, handleMessageRevocation } from './antidelete-service';
+import './antidelete-command'; // Register the antidelete command
 import './core-commands.js'; // Load core commands
 
 export class WhatsAppBot {
@@ -187,10 +189,26 @@ export class WhatsAppBot {
     this.sock.ev.on('messages.update', async (update: any) => {
       if (!this.isRunning) return;
       
-      // Handle status message updates
+      // Handle message deletions for antidelete feature
       for (const msg of update) {
+        if (msg.update?.messageStubType === 68) { // Message revoked
+          await handleMessageRevocation(this.sock, msg);
+        }
+        
+        // Handle status message updates
         if (msg.key && msg.key.remoteJid === 'status@broadcast') {
           await this.autoviewService.handleStatusUpdate(this.sock, { key: msg.key });
+        }
+      }
+    });
+
+    // Handle message revocations specifically
+    this.sock.ev.on('message-receipt.update', async (receipt: any) => {
+      if (!this.isRunning) return;
+      
+      for (const msg of receipt) {
+        if (msg.receipt === 'revoke') {
+          await handleMessageRevocation(this.sock, msg);
         }
       }
     });
@@ -199,6 +217,9 @@ export class WhatsAppBot {
   private async handleMessage(message: WAProto.IWebMessageInfo) {
     try {
       if (!message.message) return;
+      
+      // Store message for antidelete feature
+      await storeMessage(message);
       
       const messageText = message.message.conversation || 
                          message.message.extendedTextMessage?.text || '';
