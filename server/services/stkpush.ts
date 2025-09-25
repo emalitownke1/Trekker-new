@@ -191,12 +191,11 @@ export class StkPushService {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
       console.log('🔑 Using API Key for status check:', this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'NOT_SET');
       
-      // Use the SAME API URL as the PHP implementation - SmartPay likely uses same endpoint for both initiate and status
-      // Based on PHP code, it uses the same $apiUrl for transaction status checking
-      const statusUrl = process.env.STKPUSH_TRANSACTION_STATUS_URL || this.config.apiUrl;
+      // Use the correct transaction status endpoint
+      const statusUrl = process.env.STKPUSH_TRANSACTION_STATUS_URL || 'https://api.smartpaypesa.com/v1/transactionstatus/';
       
       const payload = {
-        checkout_request_id: checkoutRequestId
+        CheckoutRequestID: checkoutRequestId
       };
 
       console.log('📡 Status check request:', {
@@ -205,11 +204,11 @@ export class StkPushService {
         hasApiKey: !!this.config.apiKey
       });
 
-      // Use the SAME authentication method as the PHP code: Authorization: $apiKey (direct)
+      // Use Bearer token authentication as per documentation
       const response = await fetch(statusUrl, {
         method: 'POST',
         headers: {
-          'Authorization': this.config.apiKey,
+          'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
