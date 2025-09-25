@@ -3946,6 +3946,67 @@ Thank you for choosing TREKKER-MD! 🚀`;
     }
   });
 
+  // Direct transaction status check endpoint (uses smartpay API directly)
+  app.post("/api/guest/stkpush/transaction-status", async (req, res) => {
+    try {
+      const { CheckoutRequestID } = req.body;
+
+      if (!CheckoutRequestID) {
+        return res.status(400).json({
+          success: false,
+          message: "CheckoutRequestID is required"
+        });
+      }
+
+      console.log('🔍 Direct transaction status check for:', CheckoutRequestID);
+
+      // Call the transaction status API directly
+      const verificationResult = await stkPushService.verifyPayment(CheckoutRequestID);
+      
+      if (verificationResult.success) {
+        // Update our local database with the response
+        try {
+          const transaction = await storage.getStkPushTransaction(CheckoutRequestID);
+          if (transaction && verificationResult.data) {
+            const updateData: any = {
+              status: verificationResult.data.status || 'pending',
+              resultCode: verificationResult.data.resultCode,
+              resultDesc: verificationResult.data.resultDesc
+            };
+
+            if (verificationResult.data.status === 'completed') {
+              updateData.amountPaid = verificationResult.data.amount;
+              updateData.mpesaReceiptNumber = verificationResult.data.mpesaReceiptNumber;
+              updateData.transactionDate = verificationResult.data.transactionDate;
+            }
+
+            await storage.updateStkPushTransaction(CheckoutRequestID, updateData);
+            console.log(`✅ Local transaction data updated for ${CheckoutRequestID}`);
+          }
+        } catch (dbError) {
+          console.warn('⚠️ Failed to update local transaction data:', dbError);
+        }
+
+        // Return the raw API response for frontend parsing
+        return res.json(verificationResult.data || verificationResult);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: verificationResult.error || 'Transaction status check failed',
+          error_code: verificationResult.error_code
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Direct transaction status check error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check transaction status',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // STK Push callback endpoint (for payment gateway to notify us)
   app.post("/api/guest/stkpush/callback", async (req, res) => {
     try {

@@ -33,6 +33,46 @@ export default function StkPushPaymentModal({
   const [transactionData, setTransactionData] = useState<any>(null);
   const [pollCount, setPollCount] = useState(0);
 
+  // Save transaction data to local storage
+  const saveTransactionData = (checkoutId: string, phoneNumber: string, amount: number) => {
+    const transactionData = {
+      checkoutRequestId: checkoutId,
+      phoneNumber: phoneNumber,
+      amount: amount.toString(),
+      timestamp: new Date().toISOString(),
+      status: 'pending'
+    };
+
+    // Create stkdata folder structure in localStorage
+    const stkDataKey = `stkdata_${checkoutId}`;
+    localStorage.setItem(stkDataKey, JSON.stringify(transactionData));
+    
+    // Also maintain a list of all transaction IDs for easy retrieval
+    const existingTransactions = JSON.parse(localStorage.getItem('stkdata_transactions') || '[]');
+    if (!existingTransactions.includes(checkoutId)) {
+      existingTransactions.push(checkoutId);
+      localStorage.setItem('stkdata_transactions', JSON.stringify(existingTransactions));
+    }
+    
+    console.log(`💾 Transaction data saved to localStorage: ${stkDataKey}`);
+  };
+
+  // Update transaction status in local storage
+  const updateTransactionStatus = (checkoutId: string, status: string, additionalData?: any) => {
+    const stkDataKey = `stkdata_${checkoutId}`;
+    const existingData = JSON.parse(localStorage.getItem(stkDataKey) || '{}');
+    
+    const updatedData = {
+      ...existingData,
+      status: status,
+      lastUpdated: new Date().toISOString(),
+      ...additionalData
+    };
+    
+    localStorage.setItem(stkDataKey, JSON.stringify(updatedData));
+    console.log(`📝 Transaction status updated: ${checkoutId} -> ${status}`);
+  };
+
   // Initiate STK Push payment
   const initiatePaymentMutation = useMutation({
     mutationFn: async (paymentData: { phoneNumber: string; amount: number; botInstanceId?: string }) => {
@@ -77,7 +117,10 @@ export default function StkPushPaymentModal({
       setTransactionData({ ...data, checkoutRequestId: checkoutId });
       setPaymentStep('processing');
       
-      // Store checkout request ID in localStorage
+      // Save transaction data to local storage
+      saveTransactionData(checkoutId, paymentPhone, amount);
+      
+      // Store checkout request ID in localStorage (for backward compatibility)
       localStorage.setItem('stkpush_checkout_id', checkoutId);
       localStorage.setItem('stkpush_phone', paymentPhone);
       localStorage.setItem('stkpush_amount', amount.toString());
@@ -93,13 +136,19 @@ export default function StkPushPaymentModal({
         
         // Auto-complete demo payment after 10 seconds
         setTimeout(() => {
-          setPaymentStep('success');
-          setTransactionData({
+          const completedData = {
             ...data,
             status: 'completed',
             amount: amount.toString(),
             mpesaReceiptNumber: `DEMO${Date.now()}`,
             transactionDate: new Date().toISOString()
+          };
+          
+          setPaymentStep('success');
+          setTransactionData(completedData);
+          updateTransactionStatus(checkoutId, 'completed', {
+            mpesaReceiptNumber: completedData.mpesaReceiptNumber,
+            transactionDate: completedData.transactionDate
           });
         }, 10000);
       } else {
@@ -135,65 +184,151 @@ export default function StkPushPaymentModal({
     }
   });
 
-  // Check payment status
+  // Check payment status using new transaction status API
   const checkPaymentStatusMutation = useMutation({
     mutationFn: async (checkoutRequestId: string) => {
       if (!checkoutRequestId) {
         throw new Error('Checkout request ID is missing');
       }
       
-      console.log('Checking status for checkout ID:', checkoutRequestId);
+      console.log('🔍 Checking transaction status for:', checkoutRequestId);
       
-      const response = await fetch('/api/guest/stkpush/status', {
+      // Use the new transaction status endpoint directly
+      const response = await fetch('/api/guest/stkpush/transaction-status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          checkoutRequestId: checkoutRequestId,
-          phoneNumber: paymentPhone
+          CheckoutRequestID: checkoutRequestId
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        console.error('Status check HTTP error:', response.status, error);
-        throw new Error(error.message || 'Failed to check payment status');
+        console.error('Transaction status check HTTP error:', response.status, error);
+        throw new Error(error.message || 'Failed to check transaction status');
       }
 
       return response.json();
     },
     onSuccess: (data) => {
-      console.log('Payment status:', data);
+      console.log('📊 Transaction status response:', data);
       
-      if (data.status === 'completed') {
-        setPaymentStep('success');
-        setTransactionData(data);
+      // Parse the response according to the documentation format
+      if (data.Body && data.Body.stkCallback) {
+        const callback = data.Body.stkCallback;
+        const resultCode = callback.ResultCode;
         
-        // Store successful payment data in localStorage
-        localStorage.setItem('stkpush_success', JSON.stringify(data));
-        localStorage.setItem('stkpush_approved_bot', botInstanceId || '');
-        
-        toast({
-          title: "Payment Successful!",
-          description: "Your bot has been approved and activated",
-        });
+        if (resultCode === 0) {
+          // Transaction completed successfully
+          const metadata = callback.CallbackMetadata?.Item || [];
+          const paymentDetails: any = {
+            status: 'completed',
+            resultCode: resultCode.toString(),
+            resultDesc: callback.ResultDesc,
+            merchantRequestId: callback.MerchantRequestID,
+            checkoutRequestId: callback.CheckoutRequestID
+          };
 
-        if (onPaymentSuccess) {
-          onPaymentSuccess(data);
+          // Extract payment details from metadata
+          for (const item of metadata) {
+            switch (item.Name) {
+              case 'Amount':
+                paymentDetails.amount = item.Value?.toString();
+                break;
+              case 'MpesaReceiptNumber':
+                paymentDetails.mpesaReceiptNumber = item.Value;
+                break;
+              case 'TransactionDate':
+                paymentDetails.transactionDate = item.Value?.toString();
+                break;
+              case 'PhoneNumber':
+                paymentDetails.phoneNumber = item.Value?.toString();
+                break;
+            }
+          }
+
+          setPaymentStep('success');
+          setTransactionData(paymentDetails);
+          
+          // Update local storage with completed transaction
+          updateTransactionStatus(checkoutRequestId, 'completed', paymentDetails);
+          
+          // Store successful payment data in localStorage
+          localStorage.setItem('stkpush_success', JSON.stringify(paymentDetails));
+          localStorage.setItem('stkpush_approved_bot', botInstanceId || '');
+          
+          toast({
+            title: "Payment Successful!",
+            description: `Transaction completed! Receipt: ${paymentDetails.mpesaReceiptNumber}`,
+          });
+
+          if (onPaymentSuccess) {
+            onPaymentSuccess(paymentDetails);
+          }
+        } else {
+          // Transaction failed
+          let errorMessage = callback.ResultDesc || 'Payment failed';
+          
+          // Map common error codes to user-friendly messages
+          switch (resultCode) {
+            case 1032:
+              errorMessage = 'Payment cancelled by user';
+              break;
+            case 1037:
+              errorMessage = 'Request timeout - unable to reach user';
+              break;
+            case 1025:
+              errorMessage = 'Error occurred while sending payment request';
+              break;
+            case 1:
+              errorMessage = 'Insufficient balance for the transaction';
+              break;
+            case 1019:
+              errorMessage = 'Transaction has expired';
+              break;
+            case 1001:
+              errorMessage = 'Another transaction is already in process';
+              break;
+          }
+
+          const failureData = {
+            status: 'failed',
+            resultCode: resultCode.toString(),
+            resultDesc: errorMessage
+          };
+
+          setPaymentStep('failed');
+          updateTransactionStatus(checkoutRequestId, 'failed', failureData);
+          
+          toast({
+            title: "Payment Failed",
+            description: errorMessage,
+            variant: "destructive"
+          });
         }
-      } else if (data.status === 'failed') {
+      } else if (data.ResponseCode && data.ResponseCode !== "0") {
+        // Handle direct error response
+        const failureData = {
+          status: 'failed',
+          resultCode: data.ResponseCode,
+          resultDesc: data.ResponseDescription || 'Transaction verification failed'
+        };
+
         setPaymentStep('failed');
+        updateTransactionStatus(checkoutRequestId, 'failed', failureData);
+        
         toast({
           title: "Payment Failed",
-          description: data.resultDesc || "Transaction was not completed successfully",
+          description: failureData.resultDesc,
           variant: "destructive"
         });
       }
-      // If still pending, continue polling
+      // If no clear response, continue polling (transaction still pending)
     },
     onError: (error: Error) => {
-      console.error('Payment status check failed:', error);
+      console.error('Transaction status check failed:', error);
       // Don't show error toast for every failed status check, as it's expected during polling
     }
   });
@@ -385,8 +520,16 @@ export default function StkPushPaymentModal({
                 </AlertDescription>
               </Alert>
             </div>
-            <div className="text-sm text-muted-foreground">
-              Transaction ID: {checkoutRequestId?.slice(0, 8)}...
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <div>
+                <strong>Transaction ID:</strong> {checkoutRequestId}
+              </div>
+              <div>
+                Status checks: {pollCount} / 40
+              </div>
+              <div className="text-xs">
+                This will automatically update when payment is completed
+              </div>
             </div>
           </div>
         )}

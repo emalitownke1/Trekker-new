@@ -231,15 +231,16 @@ export class StkPushService {
         };
       }
 
-      // Handle the response format from the documentation
+      // Return the raw response data for frontend parsing
+      // This maintains the exact format from the smartpay API documentation
       if (responseData.Body && responseData.Body.stkCallback) {
         const callback = responseData.Body.stkCallback;
         const resultCode = callback.ResultCode;
         
-        if (resultCode === 0) {
-          // Payment successful
-          const metadata = callback.CallbackMetadata?.Item || [];
-          const paymentData: any = {
+        // Process the callback metadata for easier access
+        if (resultCode === 0 && callback.CallbackMetadata) {
+          const metadata = callback.CallbackMetadata.Item || [];
+          const processedData: any = {
             status: 'completed',
             resultCode: resultCode.toString(),
             resultDesc: callback.ResultDesc,
@@ -251,16 +252,16 @@ export class StkPushService {
           for (const item of metadata) {
             switch (item.Name) {
               case 'Amount':
-                paymentData.amount = item.Value?.toString();
+                processedData.amount = item.Value?.toString();
                 break;
               case 'MpesaReceiptNumber':
-                paymentData.mpesaReceiptNumber = item.Value;
+                processedData.mpesaReceiptNumber = item.Value;
                 break;
               case 'TransactionDate':
-                paymentData.transactionDate = item.Value?.toString();
+                processedData.transactionDate = item.Value?.toString();
                 break;
               case 'PhoneNumber':
-                paymentData.phoneNumber = item.Value?.toString();
+                processedData.phoneNumber = item.Value?.toString();
                 break;
             }
           }
@@ -268,68 +269,36 @@ export class StkPushService {
           return {
             success: true,
             message: 'Payment completed successfully',
-            data: paymentData
+            data: {
+              Body: {
+                stkCallback: {
+                  ...callback,
+                  processed: processedData
+                }
+              }
+            }
           };
         } else {
-          // Payment failed or cancelled
-          let errorMessage = callback.ResultDesc || 'Payment failed';
-          
-          // Map common error codes to user-friendly messages
-          switch (resultCode) {
-            case 1032:
-              errorMessage = 'Payment cancelled by user';
-              break;
-            case 1037:
-              errorMessage = 'Request timeout - unable to reach user';
-              break;
-            case 1025:
-              errorMessage = 'Error occurred while sending payment request';
-              break;
-            case 1:
-              errorMessage = 'Insufficient balance for the transaction';
-              break;
-            case 1019:
-              errorMessage = 'Transaction has expired';
-              break;
-            case 1001:
-              errorMessage = 'Another transaction is already in process';
-              break;
-          }
-
+          // Payment failed - return raw response for frontend error handling
           return {
-            success: false,
-            error: errorMessage,
-            error_code: resultCode.toString(),
-            data: {
-              status: 'failed',
-              resultCode: resultCode.toString(),
-              resultDesc: callback.ResultDesc
-            }
+            success: true,
+            message: 'Transaction completed with error',
+            data: responseData
           };
         }
       } else if (responseData.ResponseCode) {
-        // Handle direct error response format
-        const responseCode = responseData.ResponseCode;
-        if (responseCode === "0") {
-          return {
-            success: true,
-            message: 'Transaction still pending',
-            data: { status: 'pending' }
-          };
-        } else {
-          return {
-            success: false,
-            error: responseData.ResponseDescription || 'Payment verification failed',
-            error_code: responseCode,
-            data: { status: 'failed' }
-          };
-        }
+        // Handle direct response format
+        return {
+          success: true,
+          message: responseData.ResponseCode === "0" ? 'Transaction still pending' : 'Transaction failed',
+          data: responseData
+        };
       } else {
-        // Transaction might still be pending
+        // Transaction might still be pending - return raw response
         return {
           success: true,
           message: 'Transaction status pending',
-          data: { status: 'pending' }
+          data: responseData
         };
       }
       
