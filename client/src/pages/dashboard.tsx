@@ -16,7 +16,7 @@ import AddBotModal from "@/components/add-bot-modal";
 import CommandManagement from "@/components/command-management";
 import GuestBotRegistration from "@/components/guest-bot-registration";
 import AdminBotManagement from "@/components/admin-bot-management";
-import StkPushPaymentModal from "@/components/stk-push-payment-modal";
+import StkPushPaymentModal from "@/components/stkpush-payment-modal";
 
 
 // Type definitions

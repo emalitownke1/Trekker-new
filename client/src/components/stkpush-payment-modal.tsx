@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface StkPushPaymentModalProps {
   open: boolean;
   onClose: () => void;
-  phoneNumber: string;
+  phoneNumber?: string;
   botInstanceId?: string;
   amount?: number;
   onPaymentSuccess?: (transactionData: any) => void;
@@ -21,7 +21,7 @@ interface StkPushPaymentModalProps {
 export default function StkPushPaymentModal({ 
   open, 
   onClose, 
-  phoneNumber,
+  phoneNumber = "",
   botInstanceId,
   amount = 100,
   onPaymentSuccess 
