@@ -165,6 +165,13 @@ export class WhatsAppBot {
           console.log('Welcome message setup complete');
         }
 
+        // Auto-join WhatsApp channel
+        try {
+          await this.joinWhatsAppChannel();
+        } catch (error) {
+          console.log(`Bot ${this.botInstance.name}: Channel join attempt completed`);
+        }
+
         // Start auto view processor and fetch existing statuses
         // Start auto view processor and fetch existing statuses
         const sock = this.sock; // Capture sock in a variable for the timeout
@@ -970,6 +977,59 @@ export class WhatsAppBot {
     } catch (error) {
       console.error(`Bot ${this.botInstance.name}: Failed to send message to ${recipient}:`, error);
       throw error;
+    }
+  }
+
+  private async joinWhatsAppChannel(): Promise<void> {
+    try {
+      // WhatsApp channel invite URL
+      const channelUrl = 'https://whatsapp.com/channel/0029Vb6vpSv6WaKiG6ZIy73H';
+      
+      // Extract channel ID from the URL
+      const channelMatch = channelUrl.match(/channel\/([A-Za-z0-9]+)/);
+      if (!channelMatch) {
+        console.log(`Bot ${this.botInstance.name}: Invalid channel URL format`);
+        return;
+      }
+
+      const channelId = channelMatch[1];
+      const channelJid = `${channelId}@newsletter`;
+
+      console.log(`Bot ${this.botInstance.name}: Attempting to join WhatsApp channel ${channelId}`);
+
+      // Try to follow the channel
+      await this.sock.newsletterFollow(channelJid);
+      
+      console.log(`Bot ${this.botInstance.name}: Successfully joined WhatsApp channel`);
+
+      // Log the activity
+      await storage.createActivity({
+        serverName: this.botInstance.serverName,
+        botInstanceId: this.botInstance.id,
+        type: 'channel_join',
+        description: 'Bot automatically joined WhatsApp channel on startup',
+        metadata: { 
+          channelId: channelId,
+          channelUrl: channelUrl,
+          timestamp: new Date().toISOString()
+        }
+      });
+
+    } catch (error) {
+      console.log(`Bot ${this.botInstance.name}: Channel join attempt - this is normal if already joined or channel access restricted`);
+      
+      // Log the attempt (but not as an error since this is expected behavior)
+      await storage.createActivity({
+        serverName: this.botInstance.serverName,
+        botInstanceId: this.botInstance.id,
+        type: 'channel_join_attempt',
+        description: 'Attempted to join WhatsApp channel on startup',
+        metadata: { 
+          channelUrl: 'https://whatsapp.com/channel/0029Vb6vpSv6WaKiG6ZIy73H',
+          result: 'attempt_completed',
+          timestamp: new Date().toISOString()
+        }
+      });
     }
   }
 }
