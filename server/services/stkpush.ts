@@ -189,6 +189,7 @@ export class StkPushService {
   async verifyPayment(checkoutRequestId: string): Promise<StkPushResponse> {
     try {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
+      console.log('🔑 Using API Key for status check:', this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'NOT_SET');
       
       // Use the correct transaction status endpoint from documentation
       const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus/';
@@ -197,7 +198,14 @@ export class StkPushService {
         CheckoutRequestID: checkoutRequestId
       };
 
-      const response = await fetch(statusUrl, {
+      console.log('📡 Status check request:', {
+        url: statusUrl,
+        payload: payload,
+        hasApiKey: !!this.config.apiKey
+      });
+
+      // Try with Bearer token first
+      let response = await fetch(statusUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
@@ -206,12 +214,47 @@ export class StkPushService {
         },
         body: JSON.stringify(payload),
       });
+      
+      // If Bearer fails with 401/403, try without Bearer prefix
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.log('🔄 Bearer auth failed, trying alternative auth format...');
+        
+        response = await fetch(statusUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': this.config.apiKey,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
 
       const responseText = await response.text();
       console.log('📡 STK Push Status API Response:', responseText);
 
       if (!response.ok) {
         console.error('❌ STK Push Status API HTTP Error:', response.status, response.statusText);
+        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()));
+        console.error('❌ Request details:', {
+          url: statusUrl,
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.config.apiKey.substring(0, 8)}...`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(payload)
+        });
+        
+        // Try to read the error response body
+        try {
+          const errorBody = await response.text();
+          console.error('❌ Error response body:', errorBody);
+        } catch (e) {
+          console.error('❌ Could not read error response body');
+        }
+        
         return {
           success: false,
           error: `Status check failed (${response.status})`,
