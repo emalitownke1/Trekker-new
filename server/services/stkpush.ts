@@ -190,21 +190,16 @@ export class StkPushService {
     try {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
       
-      // Use the actual transaction status endpoint
-      const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus';
+      // Use the correct transaction status endpoint - SmartPay uses GET method with query parameter
+      const statusUrl = `https://api.smartpaypesa.com/v1/transactionstatus?CheckoutRequestID=${checkoutRequestId}`;
       
-      const payload = {
-        CheckoutRequestID: checkoutRequestId
-      };
-
       const response = await fetch(statusUrl, {
-        method: 'POST',
+        method: 'GET',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify(payload),
       });
 
       const responseText = await response.text();
@@ -231,13 +226,14 @@ export class StkPushService {
         };
       }
 
-      // Return the raw response data for frontend parsing
-      // This maintains the exact format from the smartpay API documentation
+      // Handle different API response formats
+      console.log('📊 Processing transaction status response:', responseData);
+      
+      // Check if it's a completed transaction (SmartPay callback format)
       if (responseData.Body && responseData.Body.stkCallback) {
         const callback = responseData.Body.stkCallback;
         const resultCode = callback.ResultCode;
         
-        // Process the callback metadata for easier access
         if (resultCode === 0 && callback.CallbackMetadata) {
           const metadata = callback.CallbackMetadata.Item || [];
           const processedData: any = {
@@ -279,28 +275,55 @@ export class StkPushService {
             }
           };
         } else {
-          // Payment failed - return raw response for frontend error handling
+          // Payment failed
           return {
             success: true,
-            message: 'Transaction completed with error',
+            message: 'Transaction failed',
             data: responseData
           };
         }
-      } else if (responseData.ResponseCode) {
-        // Handle direct response format
-        return {
-          success: true,
-          message: responseData.ResponseCode === "0" ? 'Transaction still pending' : 'Transaction failed',
-          data: responseData
-        };
-      } else {
-        // Transaction might still be pending - return raw response
-        return {
-          success: true,
-          message: 'Transaction status pending',
-          data: responseData
-        };
       }
+      
+      // Handle direct SmartPay API status response
+      if (responseData.success !== undefined) {
+        if (responseData.success === true) {
+          return {
+            success: true,
+            message: 'Payment completed successfully',
+            data: responseData
+          };
+        } else {
+          return {
+            success: true,
+            message: 'Transaction failed',
+            data: responseData
+          };
+        }
+      }
+      
+      // Handle ResponseCode format (M-Pesa direct)
+      if (responseData.ResponseCode !== undefined) {
+        if (responseData.ResponseCode === "0") {
+          return {
+            success: true,
+            message: 'Transaction completed successfully',
+            data: responseData
+          };
+        } else {
+          return {
+            success: true,
+            message: responseData.ResponseDescription || 'Transaction failed',
+            data: responseData
+          };
+        }
+      }
+      
+      // Default case - transaction might still be pending
+      return {
+        success: true,
+        message: 'Transaction status pending',
+        data: responseData
+      };
       
     } catch (error) {
       console.error('❌ STK Push Verification Error:', error);
@@ -313,12 +336,14 @@ export class StkPushService {
   }
 
   static getDefaultConfig(): StkPushConfig {
-    // Use environment variables if available, otherwise use the provided API key
+    // Use environment variables from secrets
     const apiUrl = process.env.STKPUSH_API_URL || 'https://api.smartpaypesa.com/v1/initiatestk/';
-    const apiKey = process.env.STKPUSH_API_KEY || '99c46858a64d21c3e01a14d99353e4f2310845579961daa0f9c5adad53803a40';
+    const apiKey = process.env.STKPUSH_API_KEY || 'demo_key_requires_configuration';
     
-    if (!process.env.STKPUSH_API_KEY) {
-      console.log('🔑 Using configured API key for STK Push payments');
+    if (process.env.STKPUSH_API_KEY) {
+      console.log('🔑 Using API key from secrets for STK Push payments');
+    } else {
+      console.warn('⚠️ STKPUSH_API_KEY not found in secrets - using demo mode');
     }
     
     return {
