@@ -204,25 +204,55 @@ export class StkPushService {
         hasApiKey: !!this.config.apiKey
       });
 
-      // Try with Bearer token first
+      // Try with X-API-Key header (common for many APIs)
       let response = await fetch(statusUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          'X-API-Key': this.config.apiKey,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify(payload),
       });
       
-      // If Bearer fails with 401/403, try without Bearer prefix
+      // If X-API-Key fails, try with Bearer token
       if (!response.ok && (response.status === 401 || response.status === 403)) {
-        console.log('🔄 Bearer auth failed, trying alternative auth format...');
+        console.log('🔄 X-API-Key failed, trying Bearer token...');
+        
+        response = await fetch(statusUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.config.apiKey}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+      
+      // If Bearer also fails, try API key directly in Authorization
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.log('🔄 Bearer failed, trying direct API key in Authorization...');
         
         response = await fetch(statusUrl, {
           method: 'POST',
           headers: {
             'Authorization': this.config.apiKey,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+      
+      // If all fail, try with API-Key header (another common pattern)
+      if (!response.ok && (response.status === 401 || response.status === 403)) {
+        console.log('🔄 Authorization failed, trying API-Key header...');
+        
+        response = await fetch(statusUrl, {
+          method: 'POST',
+          headers: {
+            'API-Key': this.config.apiKey,
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
