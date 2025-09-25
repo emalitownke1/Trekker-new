@@ -189,7 +189,12 @@ export class StkPushService {
   async verifyPayment(checkoutRequestId: string): Promise<StkPushResponse> {
     try {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
-      console.log('🔑 Using API Key for status check:', this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'NOT_SET');
+      
+      // Check if there's a separate API key for transaction status
+      const statusApiKey = process.env.STKPUSH_STATUS_API_KEY || this.config.apiKey;
+      console.log('🔑 Using API Key for status check:', statusApiKey ? `${statusApiKey.substring(0, 8)}...` : 'NOT_SET');
+      console.log('🔑 Payment API Key:', this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'NOT_SET');
+      console.log('🔑 Status API Key:', statusApiKey ? `${statusApiKey.substring(0, 8)}...` : 'NOT_SET');
       
       // Use the correct transaction status endpoint
       const statusUrl = process.env.STKPUSH_TRANSACTION_STATUS_URL || 'https://api.smartpaypesa.com/v1/transactionstatus/';
@@ -201,22 +206,67 @@ export class StkPushService {
       console.log('📡 Status check request:', {
         url: statusUrl,
         payload: payload,
-        hasApiKey: !!this.config.apiKey
+        hasApiKey: !!statusApiKey,
+        usingDifferentKey: statusApiKey !== this.config.apiKey
       });
 
-      // Use Bearer token authentication as per documentation
-      const response = await fetch(statusUrl, {
+      // Try different authentication formats
+      let response;
+      
+      // First try: Bearer token (as per documentation)
+      console.log('🔄 Trying Bearer token authentication...');
+      response = await fetch(statusUrl, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
+          'Authorization': `Bearer ${statusApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),
       });
 
-      const responseText = await response.text();
-      console.log('📡 STK Push Status API Response:', responseText);
-      console.log('📡 Status API HTTP Code:', response.status);
+      let responseText = await response.text();
+      console.log('📡 STK Push Status API Response (Bearer):', responseText);
+      console.log('📡 Status API HTTP Code (Bearer):', response.status);
+
+      // If Bearer token fails with 401/403, try direct API key
+      if ((response.status === 401 || response.status === 403) && responseText.includes('Invalid API key')) {
+        console.log('🔄 Bearer token failed, trying direct API key...');
+        
+        response = await fetch(statusUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': statusApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        responseText = await response.text();
+        console.log('📡 STK Push Status API Response (Direct):', responseText);
+        console.log('📡 Status API HTTP Code (Direct):', response.status);
+      }
+
+      // If still failing, try without Authorization header (some APIs use API key in body)
+      if ((response.status === 401 || response.status === 403) && responseText.includes('Invalid API key')) {
+        console.log('🔄 Direct key failed, trying API key in payload...');
+        
+        const payloadWithKey = {
+          ...payload,
+          api_key: statusApiKey
+        };
+
+        response = await fetch(statusUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payloadWithKey),
+        });
+
+        responseText = await response.text();
+        console.log('📡 STK Push Status API Response (Payload Key):', responseText);
+        console.log('📡 Status API HTTP Code (Payload Key):', response.status);
+      }
 
       // Parse response (even for error responses, like PHP does)
       let responseData;
