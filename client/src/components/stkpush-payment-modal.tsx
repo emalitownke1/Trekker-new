@@ -67,20 +67,54 @@ export default function StkPushPaymentModal({
       localStorage.setItem('stkpush_phone', paymentPhone);
       localStorage.setItem('stkpush_amount', amount.toString());
       
-      toast({
-        title: "Payment Initiated",
-        description: "Check your phone for M-Pesa payment prompt",
-      });
+      // Check if this is demo mode
+      const isDemoMode = data.checkoutRequestId?.startsWith('MOCK_') || data.message?.includes('Demo') || data.message?.includes('simulated');
+      
+      if (isDemoMode) {
+        toast({
+          title: "Demo Payment",
+          description: "Payment simulation started - will auto-complete in 10 seconds",
+        });
+        
+        // Auto-complete demo payment after 10 seconds
+        setTimeout(() => {
+          setPaymentStep('success');
+          setTransactionData({
+            ...data,
+            status: 'completed',
+            amount: amount.toString(),
+            mpesaReceiptNumber: `DEMO${Date.now()}`,
+            transactionDate: new Date().toISOString()
+          });
+        }, 10000);
+      } else {
+        toast({
+          title: "Payment Initiated",
+          description: "Check your phone for M-Pesa payment prompt",
+        });
 
-      // Start polling for payment status
-      startPaymentStatusPolling(data.checkoutRequestId);
+        // Start polling for payment status
+        startPaymentStatusPolling(data.checkoutRequestId);
+      }
     },
     onError: (error: Error) => {
       console.error('Payment initiation failed:', error);
       setPaymentStep('failed');
+      
+      let errorMessage = error.message;
+      
+      // Handle specific error types
+      if (error.message.includes('Invalid API key')) {
+        errorMessage = "Payment system not configured. Please contact administrator (+254704897825) to enable M-Pesa payments.";
+      } else if (error.message.includes('Phone number must be in format')) {
+        errorMessage = "Please enter a valid Safaricom number starting with 254 (e.g., 254712345678)";
+      } else if (error.message.includes('Network error')) {
+        errorMessage = "Network connection failed. Please check your internet and try again.";
+      }
+      
       toast({
         title: "Payment Failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -168,7 +202,10 @@ export default function StkPushPaymentModal({
   };
 
   const handleInitiatePayment = () => {
-    if (!paymentPhone || !/^\d{10,15}$/.test(paymentPhone.replace(/[\s\-\(\)\+]/g, ''))) {
+    const cleanedPhone = paymentPhone.replace(/[\s\-\(\)\+]/g, '');
+    
+    // Validate phone number format
+    if (!cleanedPhone || cleanedPhone.length < 10) {
       toast({
         title: "Invalid Phone Number",
         description: "Please enter a valid phone number",
@@ -176,10 +213,27 @@ export default function StkPushPaymentModal({
       });
       return;
     }
+    
+    // Ensure it starts with 254 for Kenyan numbers
+    let formattedPhone = cleanedPhone;
+    if (cleanedPhone.startsWith('0')) {
+      formattedPhone = '254' + cleanedPhone.substring(1);
+    } else if (cleanedPhone.startsWith('7') || cleanedPhone.startsWith('1')) {
+      formattedPhone = '254' + cleanedPhone;
+    }
+    
+    // Validate final format
+    if (!/^254\d{9}$/.test(formattedPhone)) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid Safaricom number (e.g., 0712345678 or 254712345678)",
+        variant: "destructive"
+      });
+      return;
+    }
 
-    const cleanedPhone = paymentPhone.replace(/[\s\-\(\)\+]/g, '');
     initiatePaymentMutation.mutate({
-      phoneNumber: cleanedPhone,
+      phoneNumber: formattedPhone,
       amount: amount,
       botInstanceId: botInstanceId
     });

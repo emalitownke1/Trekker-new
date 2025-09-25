@@ -3804,10 +3804,29 @@ Thank you for choosing TREKKER-MD! 🚀`;
           transactionRef: paymentRequest.account_reference
         });
       } else {
+        // Map error codes to user-friendly messages
+        let userMessage = paymentResult.error || 'Failed to initiate payment';
+        
+        switch (paymentResult.error_code) {
+          case 'INVALID_API_KEY':
+            userMessage = 'Payment system not configured. Please contact +254704897825 to enable M-Pesa payments.';
+            break;
+          case 'INSUFFICIENT_PERMISSIONS':
+            userMessage = 'Payment system configuration issue. Please contact support at +254704897825.';
+            break;
+          case 'INVALID_PHONE_FORMAT':
+            userMessage = 'Please enter a valid Safaricom number (e.g., 254712345678)';
+            break;
+          case 'NETWORK_ERROR':
+            userMessage = 'Network connection failed. Please check your internet and try again.';
+            break;
+        }
+        
         res.status(400).json({
           success: false,
-          message: paymentResult.error || 'Failed to initiate payment',
-          error_code: paymentResult.error_code
+          message: userMessage,
+          error_code: paymentResult.error_code,
+          originalError: paymentResult.error
         });
       }
 
