@@ -190,16 +190,21 @@ export class StkPushService {
     try {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
       
-      // Use the correct transaction status endpoint - SmartPay uses GET method with query parameter
-      const statusUrl = `https://api.smartpaypesa.com/v1/transactionstatus?CheckoutRequestID=${checkoutRequestId}`;
+      // Use the correct transaction status endpoint - SmartPay uses POST method with JSON body
+      const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus';
       
+      const payload = {
+        CheckoutRequestID: checkoutRequestId
+      };
+
       const response = await fetch(statusUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: JSON.stringify(payload),
       });
 
       const responseText = await response.text();
@@ -226,16 +231,23 @@ export class StkPushService {
         };
       }
 
-      // Handle different API response formats
       console.log('📊 Processing transaction status response:', responseData);
       
-      // Check if it's a completed transaction (SmartPay callback format)
+      // Handle SmartPay API response format as per documentation
       if (responseData.Body && responseData.Body.stkCallback) {
         const callback = responseData.Body.stkCallback;
         const resultCode = callback.ResultCode;
         
-        if (resultCode === 0 && callback.CallbackMetadata) {
-          const metadata = callback.CallbackMetadata.Item || [];
+        console.log('🔍 STK Callback details:', {
+          resultCode,
+          resultDesc: callback.ResultDesc,
+          merchantRequestId: callback.MerchantRequestID,
+          checkoutRequestId: callback.CheckoutRequestID
+        });
+        
+        if (resultCode === 0) {
+          // Transaction completed successfully
+          const metadata = callback.CallbackMetadata?.Item || [];
           const processedData: any = {
             status: 'completed',
             resultCode: resultCode.toString(),
@@ -262,63 +274,104 @@ export class StkPushService {
             }
           }
 
+          console.log('✅ Payment completed successfully:', processedData);
+          
           return {
             success: true,
             message: 'Payment completed successfully',
-            data: {
-              Body: {
-                stkCallback: {
-                  ...callback,
-                  processed: processedData
-                }
-              }
-            }
+            data: responseData // Return the full API response for frontend parsing
           };
         } else {
-          // Payment failed
+          // Transaction failed - map common error codes
+          let errorMessage = callback.ResultDesc || 'Transaction failed';
+          
+          switch (resultCode) {
+            case 1:
+              errorMessage = 'The balance is insufficient for the transaction';
+              break;
+            case 1032:
+              errorMessage = 'Request cancelled by user';
+              break;
+            case 1037:
+              errorMessage = 'DS timeout user cannot be reached';
+              break;
+            case 1025:
+              errorMessage = 'An error occurred while sending a push request';
+              break;
+            case 9999:
+              errorMessage = 'An error occurred while sending a push request';
+              break;
+            case 2001:
+              errorMessage = 'The initiator information is invalid';
+              break;
+            case 1019:
+              errorMessage = 'Transaction has expired';
+              break;
+            case 1001:
+              errorMessage = 'Unable to lock subscriber, a transaction is already in process';
+              break;
+          }
+          
+          console.log('❌ Transaction failed:', { resultCode, errorMessage });
+          
           return {
             success: true,
-            message: 'Transaction failed',
+            message: errorMessage,
             data: responseData
           };
         }
       }
       
-      // Handle direct SmartPay API status response
-      if (responseData.success !== undefined) {
-        if (responseData.success === true) {
-          return {
-            success: true,
-            message: 'Payment completed successfully',
-            data: responseData
-          };
-        } else {
-          return {
-            success: true,
-            message: 'Transaction failed',
-            data: responseData
-          };
-        }
-      }
-      
-      // Handle ResponseCode format (M-Pesa direct)
+      // Handle error response format (ResponseCode/ResponseDescription)
       if (responseData.ResponseCode !== undefined) {
-        if (responseData.ResponseCode === "0") {
-          return {
-            success: true,
-            message: 'Transaction completed successfully',
-            data: responseData
-          };
-        } else {
-          return {
-            success: true,
-            message: responseData.ResponseDescription || 'Transaction failed',
-            data: responseData
-          };
+        const responseCode = responseData.ResponseCode;
+        let errorMessage = responseData.ResponseDescription || 'Transaction status check failed';
+        
+        console.log('⚠️ Error response:', { responseCode, errorMessage });
+        
+        // Map specific error codes
+        switch (responseCode) {
+          case "0":
+            return {
+              success: true,
+              message: 'Transaction completed successfully',
+              data: responseData
+            };
+          case "1":
+            errorMessage = 'The balance is insufficient for the transaction';
+            break;
+          case "1032":
+            errorMessage = 'Request cancelled by user';
+            break;
+          case "1037":
+            errorMessage = 'DS timeout user cannot be reached';
+            break;
+          case "1025":
+            errorMessage = 'An error occurred while sending a push request';
+            break;
+          case "9999":
+            errorMessage = 'An error occurred while sending a push request';
+            break;
+          case "2001":
+            errorMessage = 'The initiator information is invalid';
+            break;
+          case "1019":
+            errorMessage = 'Transaction has expired';
+            break;
+          case "1001":
+            errorMessage = 'Unable to lock subscriber, a transaction is already in process';
+            break;
         }
+        
+        return {
+          success: true,
+          message: errorMessage,
+          data: responseData
+        };
       }
       
-      // Default case - transaction might still be pending
+      // Default case - transaction might still be pending or unknown format
+      console.log('📋 Unknown response format, treating as pending:', responseData);
       return {
         success: true,
         message: 'Transaction status pending',
