@@ -156,7 +156,7 @@ export class StkPushService {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
       
       // Use the actual transaction status endpoint
-      const statusUrl = 'https://api.smartpay.co.ke/v1/transactionstatus';
+      const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus';
       
       const payload = {
         CheckoutRequestID: checkoutRequestId
@@ -310,7 +310,7 @@ export class StkPushService {
 
   static getDefaultConfig(): StkPushConfig {
     // Use environment variables if available, otherwise use the provided API key
-    const apiUrl = process.env.STKPUSH_API_URL || 'https://api.smartpay.co.ke/v1/initiatestk/';
+    const apiUrl = process.env.STKPUSH_API_URL || 'https://api.smartpaypesa.com/v1/initiatestk/';
     const apiKey = process.env.STKPUSH_API_KEY || '99c46858a64d21c3e01a14d99353e4f2310845579961daa0f9c5adad53803a40';
     
     if (!process.env.STKPUSH_API_KEY) {
