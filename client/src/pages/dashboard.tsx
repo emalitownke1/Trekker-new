@@ -1,9 +1,10 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import * as React from "react";
 import { Link } from "wouter";
@@ -15,6 +16,8 @@ import AddBotModal from "@/components/add-bot-modal";
 import CommandManagement from "@/components/command-management";
 import GuestBotRegistration from "@/components/guest-bot-registration";
 import AdminBotManagement from "@/components/admin-bot-management";
+import StkPushPaymentModal from "@/components/stk-push-payment-modal";
+
 
 // Type definitions
 interface ServerInfo {
@@ -62,6 +65,8 @@ export default function Dashboard() {
   const [showGodRegistry, setShowGodRegistry] = useState(false);
   const [selectedBotForFeatures, setSelectedBotForFeatures] = useState<BotInstance | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<GodRegistryEntry | null>(null);
+  const [showStkPushModal, setShowStkPushModal] = useState(false);
+
 
   // Fetch dashboard stats
   const { data: stats = {}, isLoading: statsLoading } = useQuery({
@@ -569,6 +574,16 @@ export default function Dashboard() {
                     <i className="fas fa-rocket mr-2"></i>
                     Register Your Bot
                   </Button>
+
+                  {/* STK Push Payment Button for Guest Mode */}
+                  <div className="mt-6">
+                    <Button 
+                      onClick={() => setShowStkPushModal(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      💳 Pay & Approve Bot
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -597,6 +612,12 @@ export default function Dashboard() {
           onClose={() => setShowAdminBotManagement(false)}
         />
       )}
+
+      {/* STK Push Payment Modal */}
+      <StkPushPaymentModal
+        open={showStkPushModal}
+        onClose={() => setShowStkPushModal(false)}
+      />
 
       {/* Feature Management Dialog */}
       {selectedBotForFeatures && (
