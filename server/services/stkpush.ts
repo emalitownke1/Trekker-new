@@ -122,22 +122,57 @@ export class StkPushService {
         };
       }
 
-      if (responseData.success || responseData.ResponseCode === "0") {
+      // Handle SmartPay API response format
+      if (responseData.success === true || responseData.ResponseCode === "0") {
         console.log('✅ STK Push initiated successfully:', responseData);
+        
+        // Extract checkout request ID from various possible fields
+        const checkoutRequestID = responseData.checkoutRequestID || 
+                                  responseData.CheckoutRequestID || 
+                                  responseData.data?.checkoutRequestID ||
+                                  responseData.data?.CheckoutRequestID;
+        
+        if (!checkoutRequestID) {
+          console.error('❌ No checkout request ID in successful response:', responseData);
+          return {
+            success: false,
+            error: 'Payment initiated but no checkout ID received. Please contact support.',
+            error_code: 'MISSING_CHECKOUT_ID'
+          };
+        }
+        
         return {
           success: true,
-          message: responseData.message || responseData.ResponseDescription || 'Payment initiated successfully',
-          checkoutRequestID: responseData.data?.checkoutRequestID || responseData.CheckoutRequestID,
-          data: responseData.data || responseData
+          message: responseData.message || responseData.ResponseDescription || 'STK Push initiated successfully',
+          checkoutRequestID: checkoutRequestID,
+          data: {
+            ...responseData,
+            checkoutRequestID: checkoutRequestID
+          }
         };
       } else {
         console.log('❌ STK Push failed:', responseData);
-        const errorMessage = responseData.error || responseData.errorMessage || responseData.ResponseDescription || 'Payment initiation failed';
+        
+        // Handle different error response formats
+        let errorMessage = 'Payment initiation failed';
+        let errorCode = 'PAYMENT_FAILED';
+        
+        if (responseData.error) {
+          errorMessage = responseData.error;
+          errorCode = responseData.error_code || 'API_ERROR';
+        } else if (responseData.errorMessage) {
+          errorMessage = responseData.errorMessage;
+          errorCode = responseData.errorCode || 'API_ERROR';
+        } else if (responseData.ResponseDescription) {
+          errorMessage = responseData.ResponseDescription;
+          errorCode = responseData.ResponseCode || 'MPESA_ERROR';
+        }
+        
         return {
           success: false,
           error: errorMessage,
-          error_code: responseData.error_code || responseData.errorCode || responseData.ResponseCode || 'PAYMENT_FAILED',
-          details: responseData.details
+          error_code: errorCode,
+          details: responseData
         };
       }
 

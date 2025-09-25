@@ -58,17 +58,32 @@ export default function StkPushPaymentModal({
     },
     onSuccess: (data) => {
       console.log('Payment initiated successfully:', data);
-      setCheckoutRequestId(data.checkoutRequestId);
-      setTransactionData(data);
+      
+      // Use the correct field name from the API response
+      const checkoutId = data.checkoutRequestId || data.checkoutRequestID || data.CheckoutRequestID;
+      
+      if (!checkoutId) {
+        console.error('No checkout request ID in response:', data);
+        setPaymentStep('failed');
+        toast({
+          title: "Payment Error",
+          description: "Invalid response from payment gateway",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setCheckoutRequestId(checkoutId);
+      setTransactionData({ ...data, checkoutRequestId: checkoutId });
       setPaymentStep('processing');
       
       // Store checkout request ID in localStorage
-      localStorage.setItem('stkpush_checkout_id', data.checkoutRequestId);
+      localStorage.setItem('stkpush_checkout_id', checkoutId);
       localStorage.setItem('stkpush_phone', paymentPhone);
       localStorage.setItem('stkpush_amount', amount.toString());
       
       // Check if this is demo mode
-      const isDemoMode = data.checkoutRequestId?.startsWith('MOCK_') || data.message?.includes('Demo') || data.message?.includes('simulated');
+      const isDemoMode = checkoutId?.startsWith('MOCK_') || data.message?.includes('Demo') || data.message?.includes('simulated');
       
       if (isDemoMode) {
         toast({
@@ -94,7 +109,7 @@ export default function StkPushPaymentModal({
         });
 
         // Start polling for payment status
-        startPaymentStatusPolling(data.checkoutRequestId);
+        startPaymentStatusPolling(checkoutId);
       }
     },
     onError: (error: Error) => {
@@ -123,6 +138,12 @@ export default function StkPushPaymentModal({
   // Check payment status
   const checkPaymentStatusMutation = useMutation({
     mutationFn: async (checkoutRequestId: string) => {
+      if (!checkoutRequestId) {
+        throw new Error('Checkout request ID is missing');
+      }
+      
+      console.log('Checking status for checkout ID:', checkoutRequestId);
+      
       const response = await fetch('/api/guest/stkpush/status', {
         method: 'POST',
         headers: {
@@ -136,6 +157,7 @@ export default function StkPushPaymentModal({
 
       if (!response.ok) {
         const error = await response.json();
+        console.error('Status check HTTP error:', response.status, error);
         throw new Error(error.message || 'Failed to check payment status');
       }
 
@@ -164,7 +186,7 @@ export default function StkPushPaymentModal({
         setPaymentStep('failed');
         toast({
           title: "Payment Failed",
-          description: "Transaction was not completed successfully",
+          description: data.resultDesc || "Transaction was not completed successfully",
           variant: "destructive"
         });
       }
@@ -172,33 +194,48 @@ export default function StkPushPaymentModal({
     },
     onError: (error: Error) => {
       console.error('Payment status check failed:', error);
+      // Don't show error toast for every failed status check, as it's expected during polling
     }
   });
 
   // Poll payment status every 3 seconds
   const startPaymentStatusPolling = (checkoutId: string) => {
+    if (!checkoutId) {
+      console.error('Cannot start polling without checkout ID');
+      setPaymentStep('failed');
+      return;
+    }
+    
+    console.log('Starting payment status polling for:', checkoutId);
+    let pollAttempts = 0;
+    
     const pollInterval = setInterval(() => {
-      setPollCount(prev => prev + 1);
+      pollAttempts++;
+      setPollCount(pollAttempts);
       
       // Stop polling after 2 minutes (40 polls * 3 seconds)
-      if (pollCount >= 40) {
+      if (pollAttempts >= 40) {
         clearInterval(pollInterval);
         setPaymentStep('failed');
         toast({
           title: "Payment Timeout",
-          description: "Payment verification timed out. Please try again.",
+          description: "Payment verification timed out. Please contact support with reference: " + checkoutId.slice(-8),
           variant: "destructive"
         });
         return;
       }
       
-      checkPaymentStatusMutation.mutate(checkoutId);
-      
       // Stop polling if payment is complete
       if (paymentStep === 'success' || paymentStep === 'failed') {
         clearInterval(pollInterval);
+        return;
       }
+      
+      checkPaymentStatusMutation.mutate(checkoutId);
     }, 3000);
+    
+    // Store interval reference to clear it on component unmount
+    return pollInterval;
   };
 
   const handleInitiatePayment = () => {
