@@ -3852,6 +3852,9 @@ Thank you for choosing TREKKER-MD! 🚀`;
         });
       }
 
+      console.log('🔍 Checking STK Push status for:', checkoutRequestId);
+
+      // First check if we have the transaction in our database
       const transaction = await storage.getStkPushTransaction(checkoutRequestId);
       
       if (!transaction) {
@@ -3861,16 +3864,77 @@ Thank you for choosing TREKKER-MD! 🚀`;
         });
       }
 
-      // For now, we'll return the stored status
-      // In a real implementation, you'd verify with the payment gateway
-      res.json({
-        success: true,
-        status: transaction.status,
-        amount: transaction.amount,
-        phoneNumber: transaction.phoneNumber,
-        transactionDate: transaction.transactionDate,
-        mpesaReceiptNumber: transaction.mpesaReceiptNumber
-      });
+      // If transaction is already completed or failed, return stored data
+      if (transaction.status === 'completed' || transaction.status === 'failed') {
+        return res.json({
+          success: true,
+          status: transaction.status,
+          amount: transaction.amount,
+          phoneNumber: transaction.phoneNumber,
+          transactionDate: transaction.transactionDate,
+          mpesaReceiptNumber: transaction.mpesaReceiptNumber,
+          resultDesc: transaction.resultDesc
+        });
+      }
+
+      // Check with the payment gateway for pending transactions
+      try {
+        const verificationResult = await stkPushService.verifyPayment(checkoutRequestId);
+        
+        if (verificationResult.success && verificationResult.data) {
+          const paymentStatus = verificationResult.data.status;
+          
+          // Update transaction in database if status changed
+          if (paymentStatus === 'completed' || paymentStatus === 'failed') {
+            const updateData: any = {
+              status: paymentStatus,
+              resultCode: verificationResult.data.resultCode,
+              resultDesc: verificationResult.data.resultDesc
+            };
+
+            if (paymentStatus === 'completed') {
+              updateData.amountPaid = verificationResult.data.amount;
+              updateData.mpesaReceiptNumber = verificationResult.data.mpesaReceiptNumber;
+              updateData.transactionDate = verificationResult.data.transactionDate;
+            }
+
+            await storage.updateStkPushTransaction(checkoutRequestId, updateData);
+            
+            console.log(`✅ STK Push transaction ${checkoutRequestId} updated to ${paymentStatus}`);
+            
+            return res.json({
+              success: true,
+              status: paymentStatus,
+              amount: verificationResult.data.amount || transaction.amount,
+              phoneNumber: transaction.phoneNumber,
+              transactionDate: verificationResult.data.transactionDate,
+              mpesaReceiptNumber: verificationResult.data.mpesaReceiptNumber,
+              resultDesc: verificationResult.data.resultDesc
+            });
+          }
+        }
+        
+        // Return current status if still pending
+        res.json({
+          success: true,
+          status: 'pending',
+          amount: transaction.amount,
+          phoneNumber: transaction.phoneNumber,
+          message: 'Transaction is still being processed'
+        });
+
+      } catch (verificationError) {
+        console.error('❌ Payment verification failed:', verificationError);
+        
+        // Return stored status if verification fails
+        res.json({
+          success: true,
+          status: transaction.status,
+          amount: transaction.amount,
+          phoneNumber: transaction.phoneNumber,
+          message: 'Status check temporarily unavailable, showing stored status'
+        });
+      }
 
     } catch (error) {
       console.error('❌ STK Push status check error:', error);
