@@ -190,8 +190,8 @@ export class StkPushService {
     try {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
       
-      // Use the correct transaction status endpoint - SmartPay uses POST method with JSON body
-      const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus';
+      // Use the correct transaction status endpoint from documentation
+      const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus/';
       
       const payload = {
         CheckoutRequestID: checkoutRequestId
