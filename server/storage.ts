@@ -8,6 +8,7 @@ import {
   serverRegistry,
   viewedStatusIds,
   externalBotConnections,
+  stkPushTransactions,
   type User,
   type InsertUser,
   type BotInstance,
@@ -25,7 +26,9 @@ import {
   type ViewedStatusId,
   type InsertViewedStatusId,
   type ExternalBotConnection,
-  type InsertExternalBotConnection
+  type InsertExternalBotConnection,
+  type StkPushTransaction,
+  type InsertStkPushTransaction
 } from "@shared/schema";
 import { db, getServerName } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -182,6 +185,12 @@ export interface IStorage {
     error?: string;
   }>;
   cleanupExpiredExternalConnections(): Promise<number>;
+
+  // STK Push Transaction methods
+  createStkPushTransaction(transaction: InsertStkPushTransaction): Promise<StkPushTransaction>;
+  getStkPushTransaction(checkoutRequestId: string): Promise<StkPushTransaction | undefined>;
+  updateStkPushTransaction(checkoutRequestId: string, updates: Partial<StkPushTransaction>): Promise<StkPushTransaction>;
+  getStkPushTransactionsByPhone(phoneNumber: string): Promise<StkPushTransaction[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1363,6 +1372,48 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`🧹 Cleaned up ${result.length} expired external bot connections`);
     return result.length;
+  }
+
+  // STK Push Transaction methods implementation
+  async createStkPushTransaction(transaction: InsertStkPushTransaction): Promise<StkPushTransaction> {
+    const [created] = await db
+      .insert(stkPushTransactions)
+      .values(transaction)
+      .returning();
+    
+    console.log(`💳 STK Push transaction created: ${created.id}`);
+    return created;
+  }
+
+  async getStkPushTransaction(checkoutRequestId: string): Promise<StkPushTransaction | undefined> {
+    const [transaction] = await db
+      .select()
+      .from(stkPushTransactions)
+      .where(eq(stkPushTransactions.checkoutRequestId, checkoutRequestId))
+      .limit(1);
+    
+    return transaction;
+  }
+
+  async updateStkPushTransaction(checkoutRequestId: string, updates: Partial<StkPushTransaction>): Promise<StkPushTransaction> {
+    const [updated] = await db
+      .update(stkPushTransactions)
+      .set({ ...updates, updatedAt: sql`CURRENT_TIMESTAMP` })
+      .where(eq(stkPushTransactions.checkoutRequestId, checkoutRequestId))
+      .returning();
+    
+    console.log(`💳 STK Push transaction updated: ${checkoutRequestId}`);
+    return updated;
+  }
+
+  async getStkPushTransactionsByPhone(phoneNumber: string): Promise<StkPushTransaction[]> {
+    const transactions = await db
+      .select()
+      .from(stkPushTransactions)
+      .where(eq(stkPushTransactions.phoneNumber, phoneNumber))
+      .orderBy(desc(stkPushTransactions.createdAt));
+    
+    return transactions;
   }
 }
 

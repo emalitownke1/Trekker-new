@@ -6,6 +6,7 @@ import multer from "multer";
 import fs from 'fs';
 import path from 'path';
 import { storage } from "./storage";
+import { stkPushService } from "./services/stkpush";
 import { insertBotInstanceSchema, insertCommandSchema, insertActivitySchema, botInstances } from "@shared/schema";
 import { botManager } from "./services/bot-manager";
 import { getServerName, db } from "./db";
@@ -3736,6 +3737,179 @@ Thank you for choosing TREKKER-MD! 🚀`;
         success: false,
         message: errorMessage
       });
+    }
+  });
+
+  // ======= STK PUSH PAYMENT ENDPOINTS FOR GUEST BOT APPROVAL =======
+  
+  // Initiate STK Push payment for guest bot approval
+  app.post("/api/guest/stkpush/initiate", async (req, res) => {
+    try {
+      const { phoneNumber, amount, botInstanceId, description } = req.body;
+
+      if (!phoneNumber || !amount) {
+        return res.status(400).json({
+          success: false,
+          message: "Phone number and amount are required"
+        });
+      }
+
+      // Clean phone number
+      const cleanedPhone = phoneNumber.replace(/[\s\-\(\)\+]/g, '');
+      
+      // Validate phone number format
+      if (!/^\d{10,15}$/.test(cleanedPhone)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid phone number format"
+        });
+      }
+
+      console.log('💳 Initiating STK push for bot approval:', {
+        phone: cleanedPhone,
+        amount: amount,
+        botId: botInstanceId
+      });
+
+      // Use the STK push service
+      const paymentRequest = {
+        phone: cleanedPhone,
+        amount: amount.toString(),
+        account_reference: `BOT_APPROVAL_${botInstanceId || 'GUEST'}`,
+        description: description || 'WhatsApp Bot Approval Payment'
+      };
+
+      const paymentResult = await stkPushService.initiatePayment(paymentRequest);
+
+      if (paymentResult.success) {
+        // Store transaction in database
+        const transactionData = {
+          phoneNumber: cleanedPhone,
+          amount: amount.toString(),
+          accountReference: paymentRequest.account_reference,
+          description: paymentRequest.description,
+          checkoutRequestId: paymentResult.checkoutRequestID,
+          status: 'pending',
+          botInstanceId: botInstanceId,
+          isGuestMode: true,
+          serverName: getServerName()
+        };
+
+        await storage.createStkPushTransaction(transactionData);
+
+        res.json({
+          success: true,
+          message: paymentResult.message,
+          checkoutRequestId: paymentResult.checkoutRequestID,
+          transactionRef: paymentRequest.account_reference
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: paymentResult.error || 'Failed to initiate payment',
+          error_code: paymentResult.error_code
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ STK Push initiation error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error during payment initiation',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Check STK Push payment status
+  app.post("/api/guest/stkpush/status", async (req, res) => {
+    try {
+      const { checkoutRequestId, phoneNumber } = req.body;
+
+      if (!checkoutRequestId) {
+        return res.status(400).json({
+          success: false,
+          message: "Checkout request ID is required"
+        });
+      }
+
+      const transaction = await storage.getStkPushTransaction(checkoutRequestId);
+      
+      if (!transaction) {
+        return res.status(404).json({
+          success: false,
+          message: "Transaction not found"
+        });
+      }
+
+      // For now, we'll return the stored status
+      // In a real implementation, you'd verify with the payment gateway
+      res.json({
+        success: true,
+        status: transaction.status,
+        amount: transaction.amount,
+        phoneNumber: transaction.phoneNumber,
+        transactionDate: transaction.transactionDate,
+        mpesaReceiptNumber: transaction.mpesaReceiptNumber
+      });
+
+    } catch (error) {
+      console.error('❌ STK Push status check error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check payment status',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // STK Push callback endpoint (for payment gateway to notify us)
+  app.post("/api/guest/stkpush/callback", async (req, res) => {
+    try {
+      console.log('📞 STK Push callback received:', req.body);
+      
+      const { Body } = req.body;
+      if (!Body || !Body.stkCallback) {
+        return res.status(400).json({ message: "Invalid callback format" });
+      }
+
+      const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc } = Body.stkCallback;
+      
+      // Update transaction status
+      const updateData = {
+        merchantRequestId: MerchantRequestID,
+        resultCode: ResultCode?.toString(),
+        resultDesc: ResultDesc,
+        status: ResultCode === 0 ? 'completed' : 'failed'
+      };
+
+      // If payment was successful, extract additional details
+      if (ResultCode === 0 && Body.stkCallback.CallbackMetadata) {
+        const metadata = Body.stkCallback.CallbackMetadata.Item;
+        
+        for (const item of metadata) {
+          switch (item.Name) {
+            case 'Amount':
+              updateData.amountPaid = item.Value?.toString();
+              break;
+            case 'MpesaReceiptNumber':
+              updateData.mpesaReceiptNumber = item.Value;
+              break;
+            case 'TransactionDate':
+              updateData.transactionDate = item.Value?.toString();
+              break;
+          }
+        }
+      }
+
+      await storage.updateStkPushTransaction(CheckoutRequestID, updateData);
+
+      console.log('✅ STK Push callback processed successfully');
+      res.json({ ResultCode: 0, ResultDesc: "Accepted" });
+
+    } catch (error) {
+      console.error('❌ STK Push callback error:', error);
+      res.status(500).json({ ResultCode: 1, ResultDesc: "Failed" });
     }
   });
 

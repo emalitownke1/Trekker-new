@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import CredentialUpdateModal from "./credential-update-modal"; import ServerSelectionPanel from "./server-selection-panel";
+import CredentialUpdateModal from "./credential-update-modal"; 
+import ServerSelectionPanel from "./server-selection-panel";
+import StkPushPaymentModal from "./stkpush-payment-modal";
 
 interface GuestBotRegistrationProps {
   open: boolean;
@@ -45,6 +47,8 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
   const [showServerSelection, setShowServerSelection] = useState(false);
   const [showCredentialUpdate, setShowCredentialUpdate] = useState(false);
   const [managingBot, setManagingBot] = useState<string | null>(null); // Track which action is in progress
+  const [showStkPushPayment, setShowStkPushPayment] = useState(false);
+  const [pendingApprovalBot, setPendingApprovalBot] = useState<any>(null);
 
   // Sequential registration state
   const [phoneCheckResult, setPhoneCheckResult] = useState<any>(null);
@@ -972,24 +976,43 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
                 <CardDescription>Your bot is now awaiting admin approval</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm">
+                <ul className="space-y-2 text-sm mb-4">
                   <li className="flex items-start gap-2">
                     <span className="text-green-500 mt-0.5">✅</span>
-                    Your bot is now dormant and awaiting admin approval
+                    Your bot is now dormant and awaiting approval
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">📱</span>
-                    Contact +254704897825 to activate your bot
+                    <span className="text-blue-500 mt-0.5">💳</span>
+                    Pay KSh 100 to instantly approve and activate your bot
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="text-purple-500 mt-0.5">⏰</span>
-                    You'll receive hourly status updates until activation
+                    <span className="text-purple-500 mt-0.5">⚡</span>
+                    M-Pesa payment - fast and secure activation
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="text-orange-500 mt-0.5">🚀</span>
                     Once approved, enjoy all premium TREKKER-MD features!
                   </li>
                 </ul>
+                
+                <Button 
+                  onClick={() => {
+                    setPendingApprovalBot({ 
+                      phoneNumber: formData.phoneNumber,
+                      botName: formData.botName,
+                      botId: 'pending'
+                    });
+                    setShowStkPushPayment(true);
+                  }}
+                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-lg mb-3"
+                  data-testid="button-approve-bot-payment"
+                >
+                  💳 Pay KSh 100 & Approve Bot Now
+                </Button>
+                
+                <p className="text-xs text-center text-muted-foreground">
+                  Or wait for manual approval (may take longer)
+                </p>
               </CardContent>
             </Card>
 
@@ -1454,6 +1477,27 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
           }}
         />
       )}
+
+      {/* STK Push Payment Modal */}
+      <StkPushPaymentModal
+        open={showStkPushPayment}
+        onClose={() => setShowStkPushPayment(false)}
+        phoneNumber={pendingApprovalBot?.phoneNumber || formData.phoneNumber}
+        botInstanceId={pendingApprovalBot?.botId}
+        amount={100}
+        onPaymentSuccess={(transactionData) => {
+          console.log('Payment successful:', transactionData);
+          setShowStkPushPayment(false);
+          toast({
+            title: "Bot Approved!",
+            description: "Your bot has been approved and activated successfully",
+          });
+          // Close the registration modal after successful payment
+          setTimeout(() => {
+            handleClose();
+          }, 2000);
+        }}
+      />
     </Dialog>
   );
 }
