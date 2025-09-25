@@ -46,14 +46,14 @@ export default function StkPushPaymentModal({
     // Create stkdata folder structure in localStorage
     const stkDataKey = `stkdata_${checkoutId}`;
     localStorage.setItem(stkDataKey, JSON.stringify(transactionData));
-    
+
     // Also maintain a list of all transaction IDs for easy retrieval
     const existingTransactions = JSON.parse(localStorage.getItem('stkdata_transactions') || '[]');
     if (!existingTransactions.includes(checkoutId)) {
       existingTransactions.push(checkoutId);
       localStorage.setItem('stkdata_transactions', JSON.stringify(existingTransactions));
     }
-    
+
     console.log(`💾 Transaction data saved to localStorage: ${stkDataKey}`);
   };
 
@@ -61,14 +61,14 @@ export default function StkPushPaymentModal({
   const updateTransactionStatus = (checkoutId: string, status: string, additionalData?: any) => {
     const stkDataKey = `stkdata_${checkoutId}`;
     const existingData = JSON.parse(localStorage.getItem(stkDataKey) || '{}');
-    
+
     const updatedData = {
       ...existingData,
       status: status,
       lastUpdated: new Date().toISOString(),
       ...additionalData
     };
-    
+
     localStorage.setItem(stkDataKey, JSON.stringify(updatedData));
     console.log(`📝 Transaction status updated: ${checkoutId} -> ${status}`);
   };
@@ -98,10 +98,10 @@ export default function StkPushPaymentModal({
     },
     onSuccess: (data) => {
       console.log('Payment initiated successfully:', data);
-      
+
       // Use the correct field name from the API response
       const checkoutId = data.checkoutRequestId || data.checkoutRequestID || data.CheckoutRequestID;
-      
+
       if (!checkoutId) {
         console.error('No checkout request ID in response:', data);
         setPaymentStep('failed');
@@ -112,28 +112,28 @@ export default function StkPushPaymentModal({
         });
         return;
       }
-      
+
       setCheckoutRequestId(checkoutId);
       setTransactionData({ ...data, checkoutRequestId: checkoutId });
       setPaymentStep('processing');
-      
+
       // Save transaction data to local storage
       saveTransactionData(checkoutId, paymentPhone, amount);
-      
+
       // Store checkout request ID in localStorage (for backward compatibility)
       localStorage.setItem('stkpush_checkout_id', checkoutId);
       localStorage.setItem('stkpush_phone', paymentPhone);
       localStorage.setItem('stkpush_amount', amount.toString());
-      
+
       // Check if this is demo mode
       const isDemoMode = checkoutId?.startsWith('MOCK_') || data.message?.includes('Demo') || data.message?.includes('simulated');
-      
+
       if (isDemoMode) {
         toast({
           title: "Demo Payment",
           description: "Payment simulation started - will auto-complete in 10 seconds",
         });
-        
+
         // Auto-complete demo payment after 10 seconds
         setTimeout(() => {
           const completedData = {
@@ -143,10 +143,10 @@ export default function StkPushPaymentModal({
             mpesaReceiptNumber: `DEMO${Date.now()}`,
             transactionDate: new Date().toISOString()
           };
-          
+
           setPaymentStep('success');
           setTransactionData(completedData);
-          updateTransactionStatus(checkoutId, 'completed', {
+          updateTransactionStatus(checkoutRequestId, 'completed', {
             mpesaReceiptNumber: completedData.mpesaReceiptNumber,
             transactionDate: completedData.transactionDate
           });
@@ -164,9 +164,9 @@ export default function StkPushPaymentModal({
     onError: (error: Error) => {
       console.error('Payment initiation failed:', error);
       setPaymentStep('failed');
-      
+
       let errorMessage = error.message;
-      
+
       // Handle specific error types
       if (error.message.includes('Invalid API key')) {
         errorMessage = "Payment system not configured. Please contact administrator (+254704897825) to enable M-Pesa payments.";
@@ -175,7 +175,7 @@ export default function StkPushPaymentModal({
       } else if (error.message.includes('Network error')) {
         errorMessage = "Network connection failed. Please check your internet and try again.";
       }
-      
+
       toast({
         title: "Payment Failed",
         description: errorMessage,
@@ -190,9 +190,9 @@ export default function StkPushPaymentModal({
       if (!checkoutRequestId) {
         throw new Error('Checkout request ID is missing');
       }
-      
+
       console.log('🔍 Checking transaction status for:', checkoutRequestId);
-      
+
       // Use the new transaction status endpoint directly
       const response = await fetch('/api/guest/stkpush/transaction-status', {
         method: 'POST',
@@ -214,12 +214,12 @@ export default function StkPushPaymentModal({
     },
     onSuccess: (data) => {
       console.log('📊 Transaction status response:', data);
-      
+
       // Parse the response according to the documentation format
       if (data.Body && data.Body.stkCallback) {
         const callback = data.Body.stkCallback;
         const resultCode = callback.ResultCode;
-        
+
         if (resultCode === 0) {
           // Transaction completed successfully
           const metadata = callback.CallbackMetadata?.Item || [];
@@ -249,19 +249,28 @@ export default function StkPushPaymentModal({
             }
           }
 
+          console.log('✅ Payment completed successfully:', paymentDetails);
+
+          // Update localStorage with completion status
+          const existingData = JSON.parse(localStorage.getItem('stkdata') || '{}');
+          if (existingData[checkoutRequestId]) {
+            existingData[checkoutRequestId] = {
+              ...existingData[checkoutRequestId],
+              status: 'completed',
+              completedAt: new Date().toISOString(),
+              mpesaReceiptNumber: paymentDetails.mpesaReceiptNumber,
+              transactionDate: paymentDetails.transactionDate
+            };
+            localStorage.setItem('stkdata', JSON.stringify(existingData));
+          }
+
           setPaymentStep('success');
           setTransactionData(paymentDetails);
-          
-          // Update local storage with completed transaction
           updateTransactionStatus(checkoutRequestId, 'completed', paymentDetails);
-          
-          // Store successful payment data in localStorage
-          localStorage.setItem('stkpush_success', JSON.stringify(paymentDetails));
-          localStorage.setItem('stkpush_approved_bot', botInstanceId || '');
-          
+
           toast({
             title: "Payment Successful!",
-            description: `Transaction completed! Receipt: ${paymentDetails.mpesaReceiptNumber}`,
+            description: `Payment of KSh ${paymentDetails.amount} completed successfully`,
           });
 
           if (onPaymentSuccess) {
@@ -270,7 +279,7 @@ export default function StkPushPaymentModal({
         } else {
           // Transaction failed
           let errorMessage = callback.ResultDesc || 'Payment failed';
-          
+
           // Map common error codes to user-friendly messages
           switch (resultCode) {
             case 1032:
@@ -301,7 +310,7 @@ export default function StkPushPaymentModal({
 
           setPaymentStep('failed');
           updateTransactionStatus(checkoutRequestId, 'failed', failureData);
-          
+
           toast({
             title: "Payment Failed",
             description: errorMessage,
@@ -318,7 +327,7 @@ export default function StkPushPaymentModal({
 
         setPaymentStep('failed');
         updateTransactionStatus(checkoutRequestId, 'failed', failureData);
-        
+
         toast({
           title: "Payment Failed",
           description: failureData.resultDesc,
@@ -340,14 +349,14 @@ export default function StkPushPaymentModal({
       setPaymentStep('failed');
       return;
     }
-    
+
     console.log('Starting payment status polling for:', checkoutId);
     let pollAttempts = 0;
-    
+
     const pollInterval = setInterval(() => {
       pollAttempts++;
       setPollCount(pollAttempts);
-      
+
       // Stop polling after 2 minutes (40 polls * 3 seconds)
       if (pollAttempts >= 40) {
         clearInterval(pollInterval);
@@ -359,23 +368,23 @@ export default function StkPushPaymentModal({
         });
         return;
       }
-      
+
       // Stop polling if payment is complete
       if (paymentStep === 'success' || paymentStep === 'failed') {
         clearInterval(pollInterval);
         return;
       }
-      
+
       checkPaymentStatusMutation.mutate(checkoutId);
     }, 3000);
-    
+
     // Store interval reference to clear it on component unmount
     return pollInterval;
   };
 
   const handleInitiatePayment = () => {
     const cleanedPhone = paymentPhone.replace(/[\s\-\(\)\+]/g, '');
-    
+
     // Validate phone number format
     if (!cleanedPhone || cleanedPhone.length < 10) {
       toast({
@@ -385,7 +394,7 @@ export default function StkPushPaymentModal({
       });
       return;
     }
-    
+
     // Ensure it starts with 254 for Kenyan numbers
     let formattedPhone = cleanedPhone;
     if (cleanedPhone.startsWith('0')) {
@@ -393,7 +402,7 @@ export default function StkPushPaymentModal({
     } else if (cleanedPhone.startsWith('7') || cleanedPhone.startsWith('1')) {
       formattedPhone = '254' + cleanedPhone;
     }
-    
+
     // Validate final format
     if (!/^254\d{9}$/.test(formattedPhone)) {
       toast({
@@ -458,7 +467,7 @@ export default function StkPushPaymentModal({
                     <div className="text-sm">Bot Approval</div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-2">
                   <Label htmlFor="paymentPhone" className="flex items-center gap-2">
                     <Phone className="h-4 w-4" />
