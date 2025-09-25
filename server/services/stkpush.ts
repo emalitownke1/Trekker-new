@@ -191,8 +191,9 @@ export class StkPushService {
       console.log('🔍 Verifying STK Push payment:', checkoutRequestId);
       console.log('🔑 Using API Key for status check:', this.config.apiKey ? `${this.config.apiKey.substring(0, 8)}...` : 'NOT_SET');
       
-      // Use the correct transaction status endpoint from documentation
-      const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus/';
+      // Use the SAME API URL as the PHP implementation - SmartPay likely uses same endpoint for both initiate and status
+      // Based on PHP code, it uses the same $apiUrl for transaction status checking
+      const statusUrl = process.env.STKPUSH_TRANSACTION_STATUS_URL || this.config.apiUrl;
       
       const payload = {
         checkout_request_id: checkoutRequestId
@@ -204,94 +205,21 @@ export class StkPushService {
         hasApiKey: !!this.config.apiKey
       });
 
-      // Try with X-API-Key header (common for many APIs)
-      let response = await fetch(statusUrl, {
+      // Use the SAME authentication method as the PHP code: Authorization: $apiKey (direct)
+      const response = await fetch(statusUrl, {
         method: 'POST',
         headers: {
-          'X-API-Key': this.config.apiKey,
+          'Authorization': this.config.apiKey,
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
         },
         body: JSON.stringify(payload),
       });
-      
-      // If X-API-Key fails, try with Bearer token
-      if (!response.ok && (response.status === 401 || response.status === 403)) {
-        console.log('🔄 X-API-Key failed, trying Bearer token...');
-        
-        response = await fetch(statusUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.config.apiKey}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      }
-      
-      // If Bearer also fails, try API key directly in Authorization
-      if (!response.ok && (response.status === 401 || response.status === 403)) {
-        console.log('🔄 Bearer failed, trying direct API key in Authorization...');
-        
-        response = await fetch(statusUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': this.config.apiKey,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      }
-      
-      // If all fail, try with API-Key header (another common pattern)
-      if (!response.ok && (response.status === 401 || response.status === 403)) {
-        console.log('🔄 Authorization failed, trying API-Key header...');
-        
-        response = await fetch(statusUrl, {
-          method: 'POST',
-          headers: {
-            'API-Key': this.config.apiKey,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-      }
 
       const responseText = await response.text();
       console.log('📡 STK Push Status API Response:', responseText);
+      console.log('📡 Status API HTTP Code:', response.status);
 
-      if (!response.ok) {
-        console.error('❌ STK Push Status API HTTP Error:', response.status, response.statusText);
-        console.error('❌ Response headers:', Object.fromEntries(response.headers.entries()));
-        console.error('❌ Request details:', {
-          url: statusUrl,
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.config.apiKey.substring(0, 8)}...`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-          },
-          body: JSON.stringify(payload)
-        });
-        
-        // Try to read the error response body
-        try {
-          const errorBody = await response.text();
-          console.error('❌ Error response body:', errorBody);
-        } catch (e) {
-          console.error('❌ Could not read error response body');
-        }
-        
-        return {
-          success: false,
-          error: `Status check failed (${response.status})`,
-          error_code: 'HTTP_ERROR'
-        };
-      }
-
+      // Parse response (even for error responses, like PHP does)
       let responseData;
       try {
         responseData = JSON.parse(responseText);
