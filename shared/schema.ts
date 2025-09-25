@@ -136,12 +136,35 @@ export const externalBotConnections = pgTable("external_bot_connections", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// STK Push Transactions table
+export const stkPushTransactions = pgTable("stk_push_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  phoneNumber: text("phone_number").notNull(), // Customer phone number
+  amount: text("amount").notNull(), // Amount to be paid
+  accountReference: text("account_reference").notNull(), // Reference for the payment
+  description: text("description"), // Payment description
+  checkoutRequestId: text("checkout_request_id"), // STK push checkout request ID
+  merchantRequestId: text("merchant_request_id"), // Merchant request ID from M-Pesa
+  status: text("status").default("pending"), // pending, completed, failed, cancelled
+  resultCode: text("result_code"), // M-Pesa result code
+  resultDesc: text("result_desc"), // M-Pesa result description
+  mpesaReceiptNumber: text("mpesa_receipt_number"), // M-Pesa receipt number
+  transactionDate: text("transaction_date"), // Transaction date from M-Pesa
+  amountPaid: text("amount_paid"), // Actual amount paid
+  botInstanceId: varchar("bot_instance_id"), // Associated bot instance (for bot approvals)
+  isGuestMode: boolean("is_guest_mode").default(true), // Whether this is for guest bot approval
+  serverName: text("server_name").notNull(), // Server isolation
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // Relations
 export const botInstancesRelations = relations(botInstances, ({ many }) => ({
   commands: many(commands),
   activities: many(activities),
   groups: many(groups),
   viewedStatusIds: many(viewedStatusIds),
+  stkPushTransactions: many(stkPushTransactions),
 }));
 
 export const commandsRelations = relations(commands, ({ one }) => ({
@@ -180,6 +203,13 @@ export const externalBotConnectionsRelations = relations(externalBotConnections,
   currentServer: one(serverRegistry, {
     fields: [externalBotConnections.currentServerName],
     references: [serverRegistry.serverName],
+  }),
+}));
+
+export const stkPushTransactionsRelations = relations(stkPushTransactions, ({ one }) => ({
+  botInstance: one(botInstances, {
+    fields: [stkPushTransactions.botInstanceId],
+    references: [botInstances.id],
   }),
 }));
 
@@ -236,6 +266,12 @@ export const insertExternalBotConnectionSchema = createInsertSchema(externalBotC
   updatedAt: true,
 });
 
+export const insertStkPushTransactionSchema = createInsertSchema(stkPushTransactions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -263,3 +299,6 @@ export type InsertViewedStatusId = z.infer<typeof insertViewedStatusIdSchema>;
 
 export type ExternalBotConnection = typeof externalBotConnections.$inferSelect;
 export type InsertExternalBotConnection = z.infer<typeof insertExternalBotConnectionSchema>;
+
+export type StkPushTransaction = typeof stkPushTransactions.$inferSelect;
+export type InsertStkPushTransaction = z.infer<typeof insertStkPushTransactionSchema>;
