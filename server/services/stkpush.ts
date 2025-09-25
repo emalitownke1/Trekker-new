@@ -195,7 +195,7 @@ export class StkPushService {
       const statusUrl = 'https://api.smartpaypesa.com/v1/transactionstatus/';
       
       const payload = {
-        CheckoutRequestID: checkoutRequestId
+        checkout_request_id: checkoutRequestId
       };
 
       console.log('📡 Status check request:', {
