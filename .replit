@@ -6,7 +6,7 @@ expertMode = true
 channel = "stable-25_05"
 
 [workflows]
-runButton = "Project"
+runButton = "Build and Start"
 
 [[workflows.workflow]]
 name = "Project"
@@ -28,6 +28,19 @@ outputType = "webview"
 task = "shell.exec"
 args = "NODE_ENV=production BASE_PATH=/default/server1/rest-service/v1.0 yarn tsx server/index.ts"
 waitForPort = 5000
+
+[[workflows.workflow]]
+name = "Build and Start"
+author = 40116771
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "yarn build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=production BASE_PATH=/default/server1/rest-service/v1.0 yarn tsx server/index.ts"
 
 [[ports]]
 localPort = 5000
