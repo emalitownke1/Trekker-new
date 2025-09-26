@@ -39,19 +39,43 @@ export default function Sidebar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showValidateModal, setShowValidateModal] = useState(false);
   const [showGuestRegistration, setShowGuestRegistration] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
-    <aside className="w-64 bg-card border-r border-border flex flex-col" data-testid="sidebar">
-      <div className="p-6 border-b border-border">
-        <div className="flex items-center space-x-3">
+    <aside className={cn(
+      "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
+      isCollapsed ? "w-16" : "w-64"
+    )} data-testid="sidebar">
+      <div className={cn(
+        "border-b border-border flex items-center justify-between",
+        isCollapsed ? "p-4" : "p-6"
+      )}>
+        <div className={cn(
+          "flex items-center",
+          isCollapsed ? "justify-center w-full" : "space-x-3"
+        )}>
           <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
             <i className="fab fa-whatsapp text-primary-foreground text-xl"></i>
           </div>
-          <div>
-            <h1 className="text-lg font-semibold text-foreground">Bot Manager</h1>
-            <p className="text-sm text-muted-foreground">WhatsApp Automation</p>
-          </div>
+          {!isCollapsed && (
+            <div>
+              <h1 className="text-lg font-semibold text-foreground">Bot Manager</h1>
+              <p className="text-sm text-muted-foreground">WhatsApp Automation</p>
+            </div>
+          )}
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-2 hover:bg-muted"
+          data-testid="sidebar-toggle"
+        >
+          <i className={cn(
+            "fas transition-transform duration-200",
+            isCollapsed ? "fa-chevron-right" : "fa-chevron-left"
+          )}></i>
+        </Button>
       </div>
       
       <nav className="flex-1 p-4 space-y-2">
@@ -60,21 +84,23 @@ export default function Sidebar() {
           <Link key={item.href} href={item.href}>
             <div
               className={cn(
-                "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors cursor-pointer",
+                "flex items-center rounded-md transition-colors cursor-pointer",
+                isCollapsed ? "justify-center px-3 py-3" : "space-x-3 px-3 py-2",
                 location === item.href
                   ? "bg-primary/10 text-primary border border-primary/20"
                   : "hover:bg-muted text-muted-foreground hover:text-foreground"
               )}
               data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
+              title={isCollapsed ? item.label : undefined}
             >
               <i className={`${item.icon} w-5`}></i>
-              <span>{item.label}</span>
+              {!isCollapsed && <span>{item.label}</span>}
             </div>
           </Link>
         ))}
         
         {/* Guest Bot Management */}
-        {!isAdmin && (
+        {!isAdmin && !isCollapsed && (
           <>
             <div className="border-t border-border my-4"></div>
             <div className="space-y-3">
@@ -91,37 +117,74 @@ export default function Sidebar() {
           <>
             <div className="border-t border-border my-4"></div>
             
-            {/* Generate Session ID Button */}
-            <Button 
-              onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
-              variant="outline"
-              className="w-full mx-3 mb-3"
-              data-testid="button-generate-session"
-            >
-              <i className="fas fa-key mr-2"></i>
-              Generate Session ID
-            </Button>
-            
-            {/* Validate Session ID Button */}
-            <Button 
-              onClick={() => setShowValidateModal(true)}
-              variant="outline"
-              className="w-full mx-3 mb-3"
-              data-testid="button-validate-session"
-            >
-              <i className="fas fa-check-circle mr-2"></i>
-              Validate Session ID
-            </Button>
-            
-            {/* Register Bot Button */}
-            <Button 
-              onClick={() => setShowGuestRegistration(true)}
-              className="w-full mx-3 bg-green-600 hover:bg-green-700 text-white"
-              data-testid="sidebar-register-bot"
-            >
-              <i className="fas fa-plus mr-2"></i>
-              Register Bot
-            </Button>
+            {isCollapsed ? (
+              /* Collapsed view - icon buttons */
+              <div className="space-y-2 px-2">
+                <Button 
+                  onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  title="Generate Session ID"
+                  data-testid="button-generate-session"
+                >
+                  <i className="fas fa-key"></i>
+                </Button>
+                
+                <Button 
+                  onClick={() => setShowValidateModal(true)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  title="Validate Session ID"
+                  data-testid="button-validate-session"
+                >
+                  <i className="fas fa-check-circle"></i>
+                </Button>
+                
+                <Button 
+                  onClick={() => setShowGuestRegistration(true)}
+                  size="sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  title="Register Bot"
+                  data-testid="sidebar-register-bot"
+                >
+                  <i className="fas fa-plus"></i>
+                </Button>
+              </div>
+            ) : (
+              /* Expanded view - full buttons */
+              <>
+                <Button 
+                  onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
+                  variant="outline"
+                  className="w-full mx-3 mb-3"
+                  data-testid="button-generate-session"
+                >
+                  <i className="fas fa-key mr-2"></i>
+                  Generate Session ID
+                </Button>
+                
+                <Button 
+                  onClick={() => setShowValidateModal(true)}
+                  variant="outline"
+                  className="w-full mx-3 mb-3"
+                  data-testid="button-validate-session"
+                >
+                  <i className="fas fa-check-circle mr-2"></i>
+                  Validate Session ID
+                </Button>
+                
+                <Button 
+                  onClick={() => setShowGuestRegistration(true)}
+                  className="w-full mx-3 bg-green-600 hover:bg-green-700 text-white"
+                  data-testid="sidebar-register-bot"
+                >
+                  <i className="fas fa-plus mr-2"></i>
+                  Register Bot
+                </Button>
+              </>
+            )}
           </>
         )}
         
@@ -129,24 +192,28 @@ export default function Sidebar() {
         {isAdmin && (
           <>
             <div className="border-t border-border my-4"></div>
-            <div className="px-3 py-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Administration
-              </p>
-            </div>
+            {!isCollapsed && (
+              <div className="px-3 py-2">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Administration
+                </p>
+              </div>
+            )}
             {adminConsoleItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <div
                   className={cn(
-                    "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors cursor-pointer",
+                    "flex items-center rounded-md transition-colors cursor-pointer",
+                    isCollapsed ? "justify-center px-3 py-3" : "space-x-3 px-3 py-2",
                     location === item.href
                       ? "bg-red-500/10 text-red-600 border border-red-500/20"
                       : "hover:bg-red-500/5 text-muted-foreground hover:text-red-600"
                   )}
                   data-testid={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
+                  title={isCollapsed ? item.label : undefined}
                 >
                   <i className={`${item.icon} w-5`}></i>
-                  <span>{item.label}</span>
+                  {!isCollapsed && <span>{item.label}</span>}
                 </div>
               </Link>
             ))}
@@ -156,14 +223,19 @@ export default function Sidebar() {
       
       <div className="p-4 border-t border-border">
         {isAuthenticated ? (
-          <div className="flex items-center space-x-3 px-3 py-2">
+          <div className={cn(
+            "flex items-center px-3 py-2",
+            isCollapsed ? "justify-center" : "space-x-3"
+          )}>
             <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
               <i className="fas fa-user text-primary-foreground text-sm"></i>
             </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-foreground">{user?.username || 'User'}</p>
-              <p className="text-xs text-muted-foreground">{isAdmin ? 'Administrator' : 'User'}</p>
-            </div>
+            {!isCollapsed && (
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">{user?.username || 'User'}</p>
+                <p className="text-xs text-muted-foreground">{isAdmin ? 'Administrator' : 'User'}</p>
+              </div>
+            )}
             <button 
               onClick={logout}
               className="text-muted-foreground hover:text-foreground" 
@@ -177,9 +249,10 @@ export default function Sidebar() {
           <Button 
             onClick={() => setShowLoginModal(true)}
             className="w-full"
+            size={isCollapsed ? "sm" : "default"}
           >
-            <i className="fas fa-sign-in-alt mr-2"></i>
-            Admin Login
+            <i className={cn("fas fa-sign-in-alt", !isCollapsed && "mr-2")}></i>
+            {!isCollapsed && "Admin Login"}
           </Button>
         )}
       </div>

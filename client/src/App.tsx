@@ -19,7 +19,7 @@ function Router() {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto transition-all duration-300 ease-in-out">
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/bot-instances">
