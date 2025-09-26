@@ -16,6 +16,7 @@ import { commandRegistry, type CommandContext } from './command-registry.js';
 import { AutoStatusService } from './auto-status.js';
 import { antideleteService } from './antidelete.js';
 import { getAntiViewOnceService } from './antiviewonce.js';
+import { SessionManager } from './session-manager.js';
 import './core-commands.js'; // Load core commands
 
 export class WhatsAppBot {
@@ -27,6 +28,7 @@ export class WhatsAppBot {
   private heartbeatInterval?: NodeJS.Timeout;
   private autoStatusService: AutoStatusService;
   private antiViewOnceService: any;
+  private sessionManager: SessionManager;
   private presenceInterval?: NodeJS.Timeout;
   private currentPresenceState: 'composing' | 'recording' = 'composing';
 
@@ -45,6 +47,9 @@ export class WhatsAppBot {
 
     // Initialize anti-viewonce service
     this.antiViewOnceService = getAntiViewOnceService(botInstance.id);
+
+    // Initialize session manager for chat session control
+    this.sessionManager = new SessionManager(botInstance.id);
 
     // If credentials are provided, save them to the auth directory
     if (botInstance.credentials) {
@@ -436,6 +441,37 @@ export class WhatsAppBot {
     try {
       if (!message.message) return;
 
+      const chatJid = message.key.remoteJid;
+      
+      // Skip processing if it's from the bot itself
+      if (message.key.fromMe) {
+        return;
+      }
+
+      // Check session management for incoming messages
+      if (chatJid) {
+        // Check if we can handle this session
+        if (!this.sessionManager.canHandleNewSession(chatJid)) {
+          console.log(`🚫 [${this.botInstance.name}] Session limit reached, cannot process message from ${chatJid}`);
+          
+          // Send a brief message about being busy if it's a new session
+          const sessionInfo = this.sessionManager.getSessionInfo(chatJid);
+          if (!sessionInfo) {
+            try {
+              await this.sock.sendMessage(chatJid, { 
+                text: "🤖 Bot is currently handling maximum sessions. Please try again in a few minutes." 
+              });
+            } catch (error) {
+              console.log(`Error sending busy message to ${chatJid}:`, error);
+            }
+          }
+          return;
+        }
+
+        // Start or update the session
+        this.sessionManager.startSession(chatJid);
+      }
+
       // Log detailed message activity
       this.logMessageActivity(message);
 
@@ -481,6 +517,12 @@ export class WhatsAppBot {
     const commandArgs = args.slice(1);
 
     console.log(`Bot ${this.botInstance.name}: Processing command ${commandName} with args:`, commandArgs);
+
+    // Ensure session is active for command processing
+    const chatJid = message.key.remoteJid;
+    if (chatJid) {
+      this.sessionManager.startSession(chatJid);
+    }
 
     // Check our command registry first
     const registeredCommand = commandRegistry.get(commandName);
@@ -867,6 +909,11 @@ export class WhatsAppBot {
         // Close the socket connection
         await this.sock.end();
         this.sock = null;
+      }
+
+      // Cleanup session manager
+      if (this.sessionManager) {
+        this.sessionManager.destroy();
       }
 
       this.isRunning = false;

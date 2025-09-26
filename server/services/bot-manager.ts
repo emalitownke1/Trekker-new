@@ -161,6 +161,24 @@ class BotManager {
     return statuses;
   }
 
+  getBotSessionStats(botId: string): any {
+    const bot = this.bots.get(botId);
+    if (bot && (bot as any).sessionManager) {
+      return (bot as any).sessionManager.getSessionStats();
+    }
+    return null;
+  }
+
+  getAllBotSessionStats(): { [botId: string]: any } {
+    const sessionStats: { [botId: string]: any } = {};
+    this.bots.forEach((bot, botId) => {
+      if ((bot as any).sessionManager) {
+        sessionStats[botId] = (bot as any).sessionManager.getSessionStats();
+      }
+    });
+    return sessionStats;
+  }
+
   async stopAllBots() {
     console.log('BotManager: Stopping all bot instances...');
     const stopPromises = Array.from(this.bots.values()).map(bot => bot.stop());

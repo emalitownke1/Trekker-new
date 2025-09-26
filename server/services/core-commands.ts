@@ -50,7 +50,7 @@ const formatMemory = (bytes: number) => {
 
 const quotes = [
   "Dream big, work hard.",
-  "Stay humble, hustle hard.", 
+  "Stay humble, hustle hard.",
   "Believe in yourself.",
   "Success is earned, not given.",
   "Actions speak louder than words.",
@@ -98,11 +98,11 @@ commandRegistry.register({
     let responseMessage = `
 ${greeting}, *User*
 
-╭━❮ TREKKERMD LIFETIME BOT ❯━╮ 
+╭━❮ TREKKERMD LIFETIME BOT ❯━╮
 ┃ *👤ʙᴏᴛ ᴏᴡɴᴇʀ:* TrekkerMD
 ┃ *🥏ᴘʀᴇғɪx:* *[ . ]*
 ┃ *🕒ᴛɪᴍᴇ:* ${formattedTime}
-┃ *🛸ᴄᴏᴍᴍᴀɴᴅꜱ:* ${allCommands.length} 
+┃ *🛸ᴄᴏᴍᴍᴀɴᴅꜱ:* ${allCommands.length}
 ┃ *📆ᴅᴀᴛᴇ:* ${formattedDate}
 ┃ *🧑‍💻ᴍᴏᴅᴇ:* ${mode}
 ┃ *📼ʀᴀᴍ:* ${formatMemory(os.totalmem() - os.freemem())}/${formatMemory(os.totalmem())}
@@ -130,23 +130,23 @@ ${greeting}, *User*
       // Auto-rotate through all available icons in icons/ directory (root level)
       const { readFileSync, existsSync, readdirSync } = await import('fs');
       const iconsDir = join(process.cwd(), 'icons');
-      
+
       // Check if icons directory exists
       if (existsSync(iconsDir)) {
         // Get all icon files in the directory (supports .jpg, .jpeg, .png)
-        const iconFiles = readdirSync(iconsDir).filter(file => 
+        const iconFiles = readdirSync(iconsDir).filter(file =>
           file.toLowerCase().match(/\.(jpg|jpeg|png)$/i)
         ).sort(); // Sort to ensure consistent order
-        
+
         if (iconFiles.length > 0) {
           // Use timestamp-based rotation to cycle through icons systematically
           const rotationIndex = Math.floor(Date.now() / 10000) % iconFiles.length; // Changes every 10 seconds
           const selectedIcon = iconFiles[rotationIndex];
           const imagePath = join(iconsDir, selectedIcon);
-          
+
           console.log(`📸 [Menu] Using icon: ${selectedIcon} (${rotationIndex + 1}/${iconFiles.length}) from ${iconsDir}`);
           console.log(`📂 [Menu] Available icons: ${iconFiles.join(', ')}`);
-          
+
           await client.sendMessage(from, {
             image: { url: imagePath },
             caption: responseMessage + commandsList
@@ -167,7 +167,7 @@ ${greeting}, *User*
   }
 });
 
-// Register list command  
+// Register list command
 commandRegistry.register({
   name: 'list',
   aliases: ['commands', 'cmdlist'],
@@ -199,7 +199,7 @@ ${greeting}, *User*
 ┃│▸ *ʙᴏᴛ ᴏᴡɴᴇʀ:* TrekkerMD
 ┃│▸ *ᴘʀᴇғɪx:* *[ . ]*
 ┃│▸ *ᴛɪᴍᴇ:* ${formattedTime}
-┃│▸ *ᴄᴏᴍᴍᴀɴᴅꜱ:* ${commands.length} 
+┃│▸ *ᴄᴏᴍᴍᴀɴᴅꜱ:* ${commands.length}
 ┃│▸ *ᴅᴀᴛᴇ:* ${formattedDate}
 ┃│▸ *ᴍᴏᴅᴇ:* ${mode}
 ┃│▸ *ᴛɪᴍᴇ ᴢᴏɴᴇ:* Africa/Nairobi
@@ -270,7 +270,7 @@ commandRegistry.register({
 
 *Quick Commands:*
 • .menu - Show command menu
-• .list - Show detailed command list  
+• .list - Show detailed command list
 • .help [command] - Show help for specific command
 
 *Categories:*
@@ -305,7 +305,7 @@ commandRegistry.register({
   name: 'owner',
   aliases: ['dev', 'developer'],
   description: 'Show bot owner information',
-  category: 'GENERAL', 
+  category: 'GENERAL',
   handler: async (context: CommandContext) => {
     const { respond } = context;
 
@@ -747,7 +747,7 @@ commandRegistry.register({
   category: 'ADMIN',
   handler: async (context: CommandContext) => {
     const { respond, message, client, args } = context;
-    
+
     // Check if sender is bot owner (from own number)
     if (!message.key.fromMe) {
       await respond('❌ This command can only be used by the bot owner!');
@@ -790,7 +790,7 @@ commandRegistry.register({
   category: 'ADMIN',
   handler: async (context: CommandContext) => {
     const { respond, message, client } = context;
-    
+
     // Check if sender is bot owner
     if (!message.key.fromMe) {
       await respond('❌ This command can only be used by the bot owner!');
@@ -823,6 +823,68 @@ commandRegistry.register({
     } catch (error) {
       console.error('Error in getviewonce command:', error);
       await respond('❌ Error attempting ViewOnce recovery.');
+    }
+  }
+});
+
+// Debug command
+commandRegistry.register('debug', {
+  description: 'Show debug information',
+  category: 'system',
+  handler: async (context: CommandContext) => {
+    const debugInfo = [
+      '🔧 **Debug Information**',
+      '',
+      `**Bot ID:** ${context.botId}`,
+      `**Command:** ${context.command}`,
+      `**Args:** ${context.args.join(' ') || 'none'}`,
+      `**From:** ${context.from}`,
+      `**Sender:** ${context.sender}`,
+      `**Prefix:** ${context.prefix}`,
+      `**Timestamp:** ${new Date().toISOString()}`,
+      '',
+      '✅ Bot is operational and responding to commands'
+    ];
+
+    await context.respond(debugInfo.join('\n'));
+  }
+});
+
+// Session status command
+commandRegistry.register('sessions', {
+  description: 'Show current session management status',
+  category: 'system',
+  handler: async (context: CommandContext) => {
+    try {
+      // Import bot manager to get session stats
+      const { botManager } = await import('./bot-manager.js');
+      const bot = botManager.getBot(context.botId);
+
+      if (!bot || !(bot as any).sessionManager) {
+        await context.respond('❌ Session manager not available for this bot');
+        return;
+      }
+
+      const sessionManager = (bot as any).sessionManager;
+      const stats = sessionManager.getSessionStats();
+
+      const sessionInfo = [
+        '📊 **Session Management Status**',
+        '',
+        `🟢 **Active Sessions:** ${stats.active}/${stats.maxAllowed}`,
+        `💾 **Cached Sessions:** ${stats.cached}`,
+        `📈 **Total Sessions:** ${stats.total}`,
+        '',
+        `**Memory Optimization:** ${stats.active <= stats.maxAllowed ? '✅ Optimal' : '⚠️ Over limit'}`,
+        `**Performance:** ${stats.active < stats.maxAllowed ? '🚀 Ready for new chats' : '⏳ At capacity'}`,
+        '',
+        '💡 *Bot maintains max 2 active conversations to ensure optimal performance*'
+      ];
+
+      await context.respond(sessionInfo.join('\n'));
+    } catch (error) {
+      await context.respond('❌ Error retrieving session information');
+      console.error('Error in sessions command:', error);
     }
   }
 });
