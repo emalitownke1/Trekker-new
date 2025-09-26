@@ -57,45 +57,58 @@ export default function Sidebar() {
   }, [isCollapsed]);
 
   return (
-    <aside 
-      ref={sidebarRef}
-      className={cn(
-        "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-16" : "w-64"
-      )} 
-      data-testid="sidebar"
-    >
-      <div className={cn(
-        "border-b border-border flex items-center justify-between",
-        isCollapsed ? "p-4" : "p-6"
-      )}>
-        <div className={cn(
-          "flex items-center",
-          isCollapsed ? "justify-center w-full" : "space-x-3"
-        )}>
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <i className="fab fa-whatsapp text-primary-foreground text-xl"></i>
-          </div>
-          {!isCollapsed && (
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Bot Manager</h1>
-              <p className="text-sm text-muted-foreground">WhatsApp Automation</p>
-            </div>
-          )}
-        </div>
+    <>
+      {/* Mobile/Collapsed Sidebar Toggle Button - Fixed Position */}
+      {isCollapsed && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="p-2 hover:bg-muted"
-          data-testid="sidebar-toggle"
+          onClick={() => setIsCollapsed(false)}
+          className="fixed top-4 left-4 z-50 p-2 bg-card border border-border shadow-lg hover:bg-muted"
+          data-testid="sidebar-expand-button"
         >
-          <i className={cn(
-            "fas transition-transform duration-200",
-            isCollapsed ? "fa-chevron-right" : "fa-chevron-left"
-          )}></i>
+          <i className="fas fa-bars"></i>
         </Button>
-      </div>
+      )}
+
+      <aside 
+        ref={sidebarRef}
+        className={cn(
+          "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-16" : "w-64"
+        )} 
+        data-testid="sidebar"
+      >
+        <div className={cn(
+          "border-b border-border flex items-center justify-between",
+          isCollapsed ? "p-4" : "p-6"
+        )}>
+          <div className={cn(
+            "flex items-center",
+            isCollapsed ? "justify-center w-full" : "space-x-3"
+          )}>
+            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+              <i className="fab fa-whatsapp text-primary-foreground text-xl"></i>
+            </div>
+            {!isCollapsed && (
+              <div>
+                <h1 className="text-lg font-semibold text-foreground">Bot Manager</h1>
+                <p className="text-sm text-muted-foreground">WhatsApp Automation</p>
+              </div>
+            )}
+          </div>
+          {!isCollapsed && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCollapsed(true)}
+              className="p-2 hover:bg-muted"
+              data-testid="sidebar-toggle"
+            >
+              <i className="fas fa-chevron-left"></i>
+            </Button>
+          )}
+        </div>
       
       <nav className="flex-1 p-4 space-y-2">
         {/* Show different navigation items based on user role */}

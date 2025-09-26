@@ -20,28 +20,30 @@ function Router() {
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
       <main className="flex-1 overflow-auto transition-all duration-300 ease-in-out">
-        <Switch>
-          <Route path="/" component={Dashboard} />
-          <Route path="/bot-instances">
-            <ProtectedRoute requireAdmin={true}>
-              <BotInstances />
-            </ProtectedRoute>
-          </Route>
-          <Route path="/commands">
-            <ProtectedRoute requireAdmin={true}>
-              <Commands />
-            </ProtectedRoute>
-          </Route>
-          <Route path="/admin">
-            <ProtectedRoute requireAdmin={true}>
-              <AdminConsole />
-            </ProtectedRoute>
-          </Route>
-          <Route path="/guest/verification" component={GuestPhoneVerification} />
-          <Route path="/guest/bot-management" component={GuestBotManagement} />
-          <Route path="/guest/cross-server" component={GuestCrossServer} />
-          <Route component={NotFound} />
-        </Switch>
+        <div className="p-4">
+          <Switch>
+            <Route path="/" component={Dashboard} />
+            <Route path="/bot-instances">
+              <ProtectedRoute requireAdmin={true}>
+                <BotInstances />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/commands">
+              <ProtectedRoute requireAdmin={true}>
+                <Commands />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/admin">
+              <ProtectedRoute requireAdmin={true}>
+                <AdminConsole />
+              </ProtectedRoute>
+            </Route>
+            <Route path="/guest/verification" component={GuestPhoneVerification} />
+            <Route path="/guest/bot-management" component={GuestBotManagement} />
+            <Route path="/guest/cross-server" component={GuestCrossServer} />
+            <Route component={NotFound} />
+          </Switch>
+        </div>
       </main>
     </div>
   );
