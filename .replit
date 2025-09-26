@@ -42,6 +42,36 @@ args = "yarn build"
 task = "shell.exec"
 args = "NODE_ENV=production BASE_PATH=/default/server1/rest-service/v1.0 yarn tsx server/index.ts"
 
+[[workflows.workflow]]
+name = "Debug Server Start"
+author = 47188959
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=production BASE_PATH=/default/server1/rest-service/v1.0 yarn tsx server/index.ts"
+
+[[workflows.workflow]]
+name = "Check Dependencies and Start"
+author = 47188959
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "yarn install"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "yarn --version"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=production BASE_PATH=/default/server1/rest-service/v1.0 yarn tsx server/index.ts"
+
 [[ports]]
 localPort = 5000
 externalPort = 80
