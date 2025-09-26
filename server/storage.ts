@@ -1442,6 +1442,17 @@ export class DatabaseStorage implements IStorage {
     return offer;
   }
 
+  async getAllOffers(serverName?: string): Promise<OfferManagement[]> {
+    const currentServer = serverName || getServerName();
+    const offers = await db
+      .select()
+      .from(offerManagement)
+      .where(eq(offerManagement.serverName, currentServer))
+      .orderBy(desc(offerManagement.createdAt));
+    
+    return offers;
+  }
+
   async createOffer(offer: InsertOfferManagement): Promise<OfferManagement> {
     const [created] = await db
       .insert(offerManagement)
@@ -1461,6 +1472,29 @@ export class DatabaseStorage implements IStorage {
     
     console.log(`🎁 Offer updated: ${updated.offerName}`);
     return updated;
+  }
+
+  async deactivateAllOffers(serverName?: string): Promise<void> {
+    const currentServer = serverName || getServerName();
+    await db
+      .update(offerManagement)
+      .set({ isActive: false, updatedAt: sql`CURRENT_TIMESTAMP` })
+      .where(and(
+        eq(offerManagement.serverName, currentServer),
+        eq(offerManagement.isActive, true)
+      ));
+    
+    console.log(`🎁 All offers deactivated on server ${currentServer}`);
+  }
+
+  async incrementOfferUsage(offerId: string): Promise<void> {
+    await db
+      .update(offerManagement)
+      .set({ 
+        currentUsage: sql`${offerManagement.currentUsage} + 1`,
+        updatedAt: sql`CURRENT_TIMESTAMP`
+      })
+      .where(eq(offerManagement.id, offerId));
   }
 
   async deleteOffer(id: string): Promise<void> {

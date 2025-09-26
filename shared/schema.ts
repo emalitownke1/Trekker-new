@@ -151,6 +151,11 @@ export const offerManagement = pgTable("offer_management", {
   startTime: timestamp("start_time"),
   endTime: timestamp("end_time"),
   serverName: text("server_name").notNull(), // isolate by server instance
+  description: text("description"), // Admin description of the offer
+  autoApproval: boolean("auto_approval").default(true), // Whether to auto-approve bots during offer
+  maxBots: integer("max_bots"), // Maximum number of bots that can use this offer
+  currentUsage: integer("current_usage").default(0), // How many bots have used this offer
+  createdBy: text("created_by").default("admin"), // Who created the offer
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });

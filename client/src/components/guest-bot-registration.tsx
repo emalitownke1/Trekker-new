@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import CredentialUpdateModal from "./credential-update-modal"; 
+import CredentialUpdateModal from "./credential-update-modal";
 import ServerSelectionPanel from "./server-selection-panel";
 import StkPushPaymentModal from "./stkpush-payment-modal";
 
@@ -216,9 +216,9 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
       } else {
         // Check if bot was auto-approved (offer active)
         const isAutoApproved = data.botDetails?.approvalStatus === 'approved';
-        
+
         setStep(7); // Show registration success
-        
+
         if (isAutoApproved) {
           toast({
             title: "🎉 Bot Auto-Approved!",
@@ -998,9 +998,10 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
                     </div>
                     <p className="text-xs text-muted-foreground">Bot successfully registered and validated</p>
                   </div>
+                  {/* Updated message for offer-based auto approval */}
                   <div className="bg-white/50 dark:bg-green-800/20 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-blue-500">🤖</span>
+                      <span className="text-green-500">✅</span>
                       <span className="font-medium text-sm">Auto-Approval Active</span>
                     </div>
                     <p className="text-xs text-muted-foreground">Your bot will be approved automatically</p>
@@ -1050,9 +1051,9 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
               </CardContent>
             </Card>
 
-            <Button 
-              onClick={handleClose} 
-              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-lg" 
+            <Button
+              onClick={handleClose}
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-lg"
               data-testid="button-close-success"
             >
               🚀 Awesome! Let's Go

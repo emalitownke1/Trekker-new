@@ -15,6 +15,7 @@ import type { BotInstance, Activity as ActivityType } from "@shared/schema";
 import MasterControlPanel from "@/components/master-control-panel";
 import ServerConfigModal from "@/components/server-config-modal";
 import ServerOverviewDashboard from "@/components/server-overview-dashboard";
+import OfferManager from "@/components/offer-manager";
 
 export default function AdminConsole() {
   const { toast } = useToast();
@@ -22,6 +23,7 @@ export default function AdminConsole() {
   const { logout } = useAuth();
   const [showMasterControl, setShowMasterControl] = useState(false);
   const [showServerConfig, setShowServerConfig] = useState(false);
+  const [showOfferManager, setShowOfferManager] = useState(false);
 
   // Fetch all bot instances
   const { data: botInstances = [], isLoading: loadingBots } = useQuery({
@@ -236,6 +238,7 @@ export default function AdminConsole() {
           <TabsTrigger value="overview" data-testid="tab-overview">Server Overview</TabsTrigger>
           <TabsTrigger value="bots" data-testid="tab-bots">Bot Management</TabsTrigger>
           <TabsTrigger value="activities" data-testid="tab-activities">Recent Activity</TabsTrigger>
+          <TabsTrigger value="offers" data-testid="tab-offers">Offer Manager</TabsTrigger>
           <TabsTrigger value="server" data-testid="tab-server">Server Config</TabsTrigger>
           <TabsTrigger value="master" data-testid="tab-master">Master Control</TabsTrigger>
         </TabsList>
@@ -403,6 +406,29 @@ export default function AdminConsole() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="offers" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Offer Management</CardTitle>
+              <CardDescription>
+                Create and manage special offers for bot registrations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button 
+                onClick={() => setShowOfferManager(true)}
+                className="w-full"
+                data-testid="button-open-offer-manager"
+              >
+                🎁 Open Offer Manager
+              </Button>
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                Create time-limited offers with auto-approval and custom durations
+              </p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="server" className="space-y-4">
           <Card>
             <CardHeader>
@@ -482,6 +508,11 @@ export default function AdminConsole() {
         onOpenChange={setShowServerConfig}
         currentServerName={(serverInfo as any)?.serverName || ""}
         hasSecretConfig={(serverInfo as any)?.hasSecretConfig || false}
+      />
+
+      <OfferManager 
+        open={showOfferManager} 
+        onClose={() => setShowOfferManager(false)} 
       />
     </div>
   );

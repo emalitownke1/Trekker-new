@@ -75,26 +75,12 @@ export class OfferManager {
     console.log('🎁 Initializing offer system...');
     
     const serverName = getServerName();
-    const offerConfig = process.env.OFFER;
-
-    if (!offerConfig) {
-      console.log('🎁 No OFFER environment variable found - offers disabled');
-      return;
-    }
-
-    const parsedOffer = this.parseOfferConfig(offerConfig);
     
-    if (!parsedOffer.isValid) {
-      console.log(`🎁 OFFER disabled (config: ${offerConfig})`);
-      await this.deactivateCurrentOffer();
-      return;
-    }
-
-    // Check if there's already an active offer for this configuration
+    // Check for existing active offers in database
     const existingOffer = await storage.getCurrentOffer(serverName);
     
-    if (existingOffer && existingOffer.offerConfig === offerConfig) {
-      // Same offer config - check if it's still valid
+    if (existingOffer) {
+      // Check if offer is still valid
       if (existingOffer.endTime && new Date() < new Date(existingOffer.endTime)) {
         console.log(`🎁 Resuming existing offer: ${existingOffer.offerName} (ends: ${existingOffer.endTime})`);
         this.currentOffer = existingOffer;
@@ -107,28 +93,69 @@ export class OfferManager {
       }
     }
 
-    // Create new offer
+    console.log('🎁 No active offers found - system ready for admin-created offers');
+  }
+
+  /**
+   * Admin method to create a new offer
+   */
+  async createAdminOffer(offerData: {
+    offerName: string;
+    description?: string;
+    durationDays: number;
+    durationMonths: number;
+    autoApproval?: boolean;
+    maxBots?: number;
+  }): Promise<OfferManagement> {
+    const serverName = getServerName();
+    
+    // Deactivate any existing offers
+    await storage.deactivateAllOffers(serverName);
+    
     const startTime = new Date();
-    const endTime = this.calculateEndTime(parsedOffer.days, parsedOffer.months);
+    const endTime = this.calculateEndTime(offerData.durationDays, offerData.durationMonths);
 
     const newOfferData: InsertOfferManagement = {
-      offerName: `Special Offer - ${parsedOffer.days}d ${parsedOffer.months}m`,
+      offerName: offerData.offerName,
+      description: offerData.description,
       isActive: true,
-      offerConfig: offerConfig,
-      durationDays: parsedOffer.days,
-      durationMonths: parsedOffer.months,
+      offerConfig: `${offerData.durationDays}d ${offerData.durationMonths}m`,
+      durationDays: offerData.durationDays,
+      durationMonths: offerData.durationMonths,
+      autoApproval: offerData.autoApproval ?? true,
+      maxBots: offerData.maxBots,
+      currentUsage: 0,
       startTime: startTime,
       endTime: endTime,
-      serverName: serverName
+      serverName: serverName,
+      createdBy: 'admin'
     };
 
     this.currentOffer = await storage.createOffer(newOfferData);
     
-    console.log(`🎁 New offer created: ${this.currentOffer.offerName}`);
-    console.log(`🎁 Offer duration: ${parsedOffer.days} days, ${parsedOffer.months} months`);
+    console.log(`🎁 Admin offer created: ${this.currentOffer.offerName}`);
+    console.log(`🎁 Offer duration: ${offerData.durationDays} days, ${offerData.durationMonths} months`);
     console.log(`🎁 Offer ends: ${endTime.toISOString()}`);
     
     this.startCountdownMonitoring();
+    return this.currentOffer;
+  }
+
+  /**
+   * Admin method to stop current offer
+   */
+  async stopCurrentOffer(): Promise<void> {
+    if (this.currentOffer) {
+      await storage.updateOffer(this.currentOffer.id, { isActive: false });
+      console.log(`🎁 Offer stopped by admin: ${this.currentOffer.offerName}`);
+      this.currentOffer = null;
+    }
+
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+      console.log('🎁 Countdown monitoring stopped');
+    }
   }
 
   /**

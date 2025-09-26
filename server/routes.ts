@@ -4520,5 +4520,127 @@ Thank you for choosing TREKKER-MD! 🚀`;
     }
   });
 
+  // ======= ADMIN OFFER MANAGEMENT ENDPOINTS =======
+
+  // Get all offers (Admin only)
+  app.get("/api/admin/offers", authenticateAdmin, async (req: AuthRequest, res) => {
+    try {
+      const offers = await storage.getAllOffers();
+      res.json(offers);
+    } catch (error) {
+      console.error('Get offers error:', error);
+      res.status(500).json({ message: "Failed to fetch offers" });
+    }
+  });
+
+  // Create new offer (Admin only)
+  app.post("/api/admin/offers/create", authenticateAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { offerName, description, durationDays, durationMonths, autoApproval, maxBots } = req.body;
+
+      if (!offerName || (!durationDays && !durationMonths)) {
+        return res.status(400).json({ message: "Offer name and duration are required" });
+      }
+
+      const { offerManager } = await import('./services/offer-manager');
+      const newOffer = await offerManager.createAdminOffer({
+        offerName,
+        description,
+        durationDays: parseInt(durationDays) || 0,
+        durationMonths: parseInt(durationMonths) || 0,
+        autoApproval: autoApproval !== false,
+        maxBots: maxBots ? parseInt(maxBots) : undefined
+      });
+
+      // Log activity
+      await storage.createActivity({
+        botInstanceId: 'admin-offer-manager',
+        type: 'offer_created',
+        description: `Admin created offer: ${offerName}`,
+        metadata: { 
+          offerId: newOffer.id,
+          durationDays: newOffer.durationDays,
+          durationMonths: newOffer.durationMonths,
+          autoApproval: newOffer.autoApproval
+        },
+        serverName: getServerName()
+      });
+
+      res.json({ success: true, offer: newOffer });
+    } catch (error) {
+      console.error('Create offer error:', error);
+      res.status(500).json({ message: "Failed to create offer" });
+    }
+  });
+
+  // Stop current offer (Admin only)
+  app.post("/api/admin/offers/stop-current", authenticateAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { offerManager } = await import('./services/offer-manager');
+      await offerManager.stopCurrentOffer();
+
+      // Log activity
+      await storage.createActivity({
+        botInstanceId: 'admin-offer-manager',
+        type: 'offer_stopped',
+        description: `Admin stopped current offer`,
+        metadata: { stoppedBy: 'admin' },
+        serverName: getServerName()
+      });
+
+      res.json({ success: true, message: "Current offer stopped successfully" });
+    } catch (error) {
+      console.error('Stop offer error:', error);
+      res.status(500).json({ message: "Failed to stop offer" });
+    }
+  });
+
+  // Update offer (Admin only)
+  app.patch("/api/admin/offers/:id", authenticateAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const updatedOffer = await storage.updateOffer(id, updates);
+
+      // Log activity
+      await storage.createActivity({
+        botInstanceId: 'admin-offer-manager',
+        type: 'offer_updated',
+        description: `Admin updated offer: ${updatedOffer.offerName}`,
+        metadata: { offerId: id, updates },
+        serverName: getServerName()
+      });
+
+      res.json({ success: true, offer: updatedOffer });
+    } catch (error) {
+      console.error('Update offer error:', error);
+      res.status(500).json({ message: "Failed to update offer" });
+    }
+  });
+
+  // Delete offer (Admin only)
+  app.delete("/api/admin/offers/:id", authenticateAdmin, async (req: AuthRequest, res) => {
+    try {
+      const { id } = req.params;
+
+      await storage.deleteOffer(id);
+
+      // Log activity
+      await storage.createActivity({
+        botInstanceId: 'admin-offer-manager',
+        type: 'offer_deleted',
+        description: `Admin deleted offer`,
+        metadata: { offerId: id },
+        serverName: getServerName()
+      });
+
+      res.json({ success: true, message: "Offer deleted successfully" });
+    } catch (error) {
+      console.error('Delete offer error:', error);
+      res.status(500).json({ message: "Failed to delete offer" });
+    }
+  });
+
   return httpServer;
 }
