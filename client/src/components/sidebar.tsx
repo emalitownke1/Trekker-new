@@ -58,17 +58,17 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Expand button positioned outside collapsed sidebar */}
+      {/* Floating expand button - completely outside and on top of everything */}
       {isCollapsed && (
         <Button
-          variant="ghost"
+          variant="default"
           size="sm"
           onClick={() => setIsCollapsed(false)}
-          className="fixed top-4 left-20 z-50 p-2 bg-card border border-border shadow-lg hover:bg-muted rounded-r-md rounded-l-none"
+          className="fixed top-6 left-20 z-[9999] p-3 bg-primary text-primary-foreground shadow-2xl hover:bg-primary/90 rounded-full border-2 border-background transition-all duration-300 hover:scale-110"
           data-testid="sidebar-expand-button"
           title="Expand Sidebar"
         >
-          <i className="fas fa-chevron-right"></i>
+          <i className="fas fa-bars text-sm"></i>
         </Button>
       )}
       
