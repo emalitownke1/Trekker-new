@@ -195,10 +195,32 @@ export async function initializeDatabase() {
     try {
       console.log('🔧 Running database migrations...');
 
-      // Add description column to offer_management table if it doesn't exist
-      await client`
-        ALTER TABLE offer_management ADD COLUMN IF NOT EXISTS description TEXT;
+      // Check if offer_management table exists and handle migrations
+      const offerTableExists = await client`
+        SELECT EXISTS (
+          SELECT FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_name = 'offer_management'
+        )
       `;
+
+      if (offerTableExists[0].exists) {
+        // Check if description column exists
+        const descriptionColumnExists = await client`
+          SELECT EXISTS (
+            SELECT FROM information_schema.columns 
+            WHERE table_name = 'offer_management' 
+            AND column_name = 'description'
+          )
+        `;
+
+        if (!descriptionColumnExists[0].exists) {
+          await client`
+            ALTER TABLE offer_management ADD COLUMN description TEXT;
+          `;
+          console.log('✅ Added description column to offer_management table');
+        }
+      }
 
       console.log('✅ Database migrations completed');
     } catch (migrationError) {
