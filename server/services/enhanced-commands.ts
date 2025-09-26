@@ -248,42 +248,39 @@ commandRegistry.register({
 
     try {
       // Get quoted message or tagged user
-      const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
       const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
 
-      if (!quotedUser && !quotedMessage) {
-        await respond('❌ Please reply to a message or tag a user to promote!');
+      if (!quotedUser) {
+        await respond('❌ Please reply to a message to promote the user!');
         return;
       }
 
-      const userToPromote = quotedUser;
-
       // Get group metadata to check admin status
       const groupMetadata = await client.groupMetadata(from);
-      const botNumber = client.user?.id.split(':')[0] + '@s.whatsapp.net';
+      const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
       const senderNumber = message.key.participant || message.key.remoteJid;
 
       // Check if sender is admin
-      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
-      if (!senderIsAdmin) {
+      const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
+      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
         await respond('❌ Only group admins can promote users!');
         return;
       }
 
       // Check if bot is admin
-      const botIsAdmin = groupMetadata.participants.find((p: any) => p.id === botNumber)?.admin;
-      if (!botIsAdmin) {
+      const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
+      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
         await respond('❌ Bot needs admin privileges to promote users!');
         return;
       }
 
       // Promote user
-      await client.groupParticipantsUpdate(from, [userToPromote], 'promote');
-      await respond(`✅ Successfully promoted @${userToPromote.split('@')[0]} to admin!`);
+      await client.groupParticipantsUpdate(from, [quotedUser], 'promote');
+      await respond(`✅ Successfully promoted @${quotedUser.split('@')[0]} to admin!`);
 
     } catch (error) {
       console.error('Error promoting user:', error);
-      await respond('❌ Failed to promote user. Make sure I have admin privileges!');
+      await respond('❌ Failed to promote user. Make sure I have admin privileges and the user is in the group!');
     }
   }
 });
@@ -310,17 +307,17 @@ commandRegistry.register({
       }
 
       const groupMetadata = await client.groupMetadata(from);
-      const botNumber = client.user?.id.split(':')[0] + '@s.whatsapp.net';
+      const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
       const senderNumber = message.key.participant || message.key.remoteJid;
 
-      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
-      if (!senderIsAdmin) {
+      const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
+      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
         await respond('❌ Only group admins can demote users!');
         return;
       }
 
-      const botIsAdmin = groupMetadata.participants.find((p: any) => p.id === botNumber)?.admin;
-      if (!botIsAdmin) {
+      const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
+      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
         await respond('❌ Bot needs admin privileges to demote users!');
         return;
       }
@@ -330,7 +327,7 @@ commandRegistry.register({
 
     } catch (error) {
       console.error('Error demoting user:', error);
-      await respond('❌ Failed to demote user. Make sure I have admin privileges!');
+      await respond('❌ Failed to demote user. Make sure I have admin privileges and the user is an admin!');
     }
   }
 });
@@ -357,17 +354,17 @@ commandRegistry.register({
       }
 
       const groupMetadata = await client.groupMetadata(from);
-      const botNumber = client.user?.id.split(':')[0] + '@s.whatsapp.net';
+      const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
       const senderNumber = message.key.participant || message.key.remoteJid;
 
-      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
-      if (!senderIsAdmin) {
+      const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
+      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
         await respond('❌ Only group admins can remove users!');
         return;
       }
 
-      const botIsAdmin = groupMetadata.participants.find((p: any) => p.id === botNumber)?.admin;
-      if (!botIsAdmin) {
+      const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
+      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
         await respond('❌ Bot needs admin privileges to remove users!');
         return;
       }
@@ -377,7 +374,7 @@ commandRegistry.register({
 
     } catch (error) {
       console.error('Error removing user:', error);
-      await respond('❌ Failed to remove user. Make sure I have admin privileges!');
+      await respond('❌ Failed to remove user. Make sure I have admin privileges and the user is in the group!');
     }
   }
 });
@@ -399,8 +396,8 @@ commandRegistry.register({
       const groupMetadata = await client.groupMetadata(from);
       const senderNumber = message.key.participant || message.key.remoteJid;
 
-      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
-      if (!senderIsAdmin) {
+      const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
+      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
         await respond('❌ Only group admins can tag everyone!');
         return;
       }
@@ -420,7 +417,7 @@ commandRegistry.register({
 
     } catch (error) {
       console.error('Error tagging all:', error);
-      await respond('❌ Failed to tag all members!');
+      await respond('❌ Failed to tag all members! Make sure I have permission to send messages.');
     }
   }
 });
@@ -517,11 +514,18 @@ commandRegistry.register({
 
     try {
       const groupMetadata = await client.groupMetadata(from);
+      const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
       const senderNumber = message.key.participant || message.key.remoteJid;
 
-      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
-      if (!senderIsAdmin) {
+      const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
+      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
         await respond('❌ Only group admins can add users!');
+        return;
+      }
+
+      const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
+      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
+        await respond('❌ Bot needs admin privileges to add users!');
         return;
       }
 
@@ -534,7 +538,7 @@ commandRegistry.register({
 
     } catch (error) {
       console.error('Error adding user:', error);
-      await respond('❌ Failed to add user. Make sure the number is registered on WhatsApp!');
+      await respond('❌ Failed to add user. Make sure the number is registered on WhatsApp and not already in the group!');
     }
   }
 });
@@ -554,11 +558,18 @@ commandRegistry.register({
 
     try {
       const groupMetadata = await client.groupMetadata(from);
+      const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
       const senderNumber = message.key.participant || message.key.remoteJid;
 
-      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
-      if (!senderIsAdmin) {
+      const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
+      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
         await respond('❌ Only group admins can mute the group!');
+        return;
+      }
+
+      const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
+      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
+        await respond('❌ Bot needs admin privileges to mute the group!');
         return;
       }
 
@@ -839,7 +850,7 @@ commandRegistry.register({
   description: 'Block a user (Owner only)',
   category: 'USER',
   handler: async (context: CommandContext) => {
-    const { respond, message, client, args } = context;
+    const { respond, message, client, args, from } = context;
 
     // Check if sender is bot owner (from own number)
     if (!message.key.fromMe) {
@@ -847,33 +858,36 @@ commandRegistry.register({
       return;
     }
 
-    if (!args.length) {
-      const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
-      if (!quotedUser) {
-        await respond('❌ Please reply to a message or provide a phone number!\n\n*Example:* .block 254712345678');
-        return;
-      }
-      
-      try {
-        await client.updateBlockStatus(quotedUser, 'block');
-        await respond(`🚫 Successfully blocked @${quotedUser.split('@')[0]}!`);
-      } catch (error) {
-        await respond('❌ Failed to block user!');
-      }
-      return;
-    }
-
     try {
-      const phoneNumber = args[0].replace(/[^\d]/g, '');
-      const userToBlock = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
-      const userJid = userToBlock + '@s.whatsapp.net';
+      let userToBlock: string;
 
-      await client.updateBlockStatus(userJid, 'block');
-      await respond(`🚫 Successfully blocked @${userToBlock}!`);
+      // If no arguments provided
+      if (!args.length) {
+        // Check if it's a reply to a message (in group or private)
+        const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quotedUser) {
+          userToBlock = quotedUser;
+        } else if (from.endsWith('@s.whatsapp.net')) {
+          // If it's a private chat, block the chat itself
+          userToBlock = from;
+        } else {
+          await respond('❌ Please reply to a message, provide a phone number, or use this command in a private chat!\n\n*Example:* .block 254712345678');
+          return;
+        }
+      } else {
+        // If phone number is provided as argument
+        const phoneNumber = args[0].replace(/[^\d]/g, '');
+        const formattedNumber = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+        userToBlock = formattedNumber + '@s.whatsapp.net';
+      }
+
+      await client.updateBlockStatus(userToBlock, 'block');
+      const displayNumber = userToBlock.split('@')[0];
+      await respond(`🚫 Successfully blocked @${displayNumber}!`);
 
     } catch (error) {
       console.error('Error blocking user:', error);
-      await respond('❌ Failed to block user!');
+      await respond('❌ Failed to block user! Make sure the number is valid.');
     }
   }
 });
