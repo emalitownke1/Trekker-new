@@ -191,39 +191,7 @@ export async function initializeDatabase() {
       );
     `;
 
-    // Add missing columns to existing tables (migrations)
-    try {
-      console.log('🔧 Running database migrations...');
-
-      // Check if offer_management table exists and add missing columns
-      const offerTableExists = await client`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'offer_management'
-        )
-      `;
-
-      if (offerTableExists[0].exists) {
-        // Check if description column exists
-        const descriptionExists = await client`
-          SELECT EXISTS (
-            SELECT FROM information_schema.columns 
-            WHERE table_name = 'offer_management' 
-            AND column_name = 'description'
-          )
-        `;
-
-        if (!descriptionExists[0].exists) {
-          await client`ALTER TABLE offer_management ADD COLUMN description TEXT`;
-          console.log('✅ Added description column to offer_management table');
-        }
-      }
-
-      console.log('✅ Database migrations completed');
-    } catch (migrationError) {
-      console.warn('⚠️ Migration warning:', migrationError);
-    }
+    console.log('✅ Database migrations completed');
 
     await client`
       CREATE TABLE IF NOT EXISTS users (
@@ -349,6 +317,16 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    // Ensure description column exists (migration for existing tables)
+    try {
+      await client`ALTER TABLE offer_management ADD COLUMN IF NOT EXISTS description TEXT`;
+      console.log('✅ Description column migration completed');
+    } catch (alterError: any) {
+      if (!alterError.message.includes('already exists')) {
+        console.warn('⚠️ Could not add description column:', alterError.message);
+      }
+    }
 
     // Handle existing tables that might be missing columns
     try {
