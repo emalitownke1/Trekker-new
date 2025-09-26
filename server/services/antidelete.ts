@@ -349,6 +349,34 @@ export class AntideleteService {
         return;
       }
 
+      // Skip messages from the bot itself
+      if (message.key.fromMe) {
+        console.log(`⚠️ [Antidelete] Skipping message from bot itself | ID: ${messageId}`);
+        return;
+      }
+
+      // Skip messages from groups (group JIDs end with @g.us)
+      if (fromJid.includes('@g.us')) {
+        console.log(`⚠️ [Antidelete] Skipping group message | ID: ${messageId} | Group: ${fromJid}`);
+        return;
+      }
+
+      // Skip messages from bot owner
+      const botOwnerJid = sock?.user?.id;
+      if (botOwnerJid && (senderJid === botOwnerJid || fromJid === botOwnerJid)) {
+        console.log(`⚠️ [Antidelete] Skipping message from bot owner | ID: ${messageId} | Owner: ${botOwnerJid}`);
+        return;
+      }
+
+      // Check message size - skip if larger than 2MB
+      const messageSize = this.calculateMessageSize(message);
+      const maxSizeBytes = 2 * 1024 * 1024; // 2MB in bytes
+      if (messageSize > maxSizeBytes) {
+        const sizeMB = (messageSize / (1024 * 1024)).toFixed(2);
+        console.log(`⚠️ [Antidelete] Skipping large message | ID: ${messageId} | Size: ${sizeMB}MB (exceeds 2MB limit)`);
+        return;
+      }
+
       // Extract message content
       const messageContent = this.extractMessageContent(message);
       const messageType = this.getMessageType(message);
@@ -822,6 +850,44 @@ export class AntideleteService {
     // Debounce or throttle this if called too frequently to avoid performance issues
     // For now, calling it directly is fine, but a more robust solution would use debouncing.
     this.saveMessageStore();
+  }
+
+  // Helper to calculate approximate message size in bytes
+  private calculateMessageSize(message: WAMessage): number {
+    try {
+      // Convert message to JSON string to get approximate size
+      const messageString = JSON.stringify(message);
+      const sizeInBytes = Buffer.byteLength(messageString, 'utf8');
+      
+      // Add estimated size of any media content
+      let mediaSizeEstimate = 0;
+      if (message.message) {
+        const mediaTypes = ['imageMessage', 'videoMessage', 'audioMessage', 'documentMessage', 'stickerMessage'];
+        for (const type of mediaTypes) {
+          if (message.message[type]) {
+            const mediaMsg = message.message[type];
+            if (mediaMsg.fileLength) {
+              mediaSizeEstimate += Number(mediaMsg.fileLength);
+            }
+          }
+        }
+        
+        // Check for ViewOnce media
+        if (message.message.viewOnceMessageV2?.message) {
+          const viewOnceMsg = message.message.viewOnceMessageV2.message;
+          for (const type of mediaTypes) {
+            if (viewOnceMsg[type] && viewOnceMsg[type].fileLength) {
+              mediaSizeEstimate += Number(viewOnceMsg[type].fileLength);
+            }
+          }
+        }
+      }
+      
+      return sizeInBytes + mediaSizeEstimate;
+    } catch (error) {
+      console.error('❌ [Antidelete] Error calculating message size:', error);
+      return 0;
+    }
   }
 
   // Download media from URL and return buffer

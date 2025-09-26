@@ -450,25 +450,7 @@ export class WhatsAppBot {
 
       // Check session management for incoming messages
       if (chatJid) {
-        // Check if we can handle this session
-        if (!this.sessionManager.canHandleNewSession(chatJid)) {
-          console.log(`🚫 [${this.botInstance.name}] Session limit reached, cannot process message from ${chatJid}`);
-          
-          // Send a brief message about being busy if it's a new session
-          const sessionInfo = this.sessionManager.getSessionInfo(chatJid);
-          if (!sessionInfo) {
-            try {
-              await this.sock.sendMessage(chatJid, { 
-                text: "🤖 Bot is currently handling maximum sessions. Please try again in a few minutes." 
-              });
-            } catch (error) {
-              console.log(`Error sending busy message to ${chatJid}:`, error);
-            }
-          }
-          return;
-        }
-
-        // Start or update the session
+        // Start or update the session (now always allows new sessions)
         this.sessionManager.startSession(chatJid);
       }
 
