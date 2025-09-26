@@ -1,0 +1,28 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+    
+    - name: Build and Deploy
+      run: |
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/your-service-name
+        gcloud run deploy server1 \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/server1\
+          --platform managed \
+          --region us-central1 \
+          --allow-unauthenticated
