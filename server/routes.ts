@@ -3949,24 +3949,25 @@ Thank you for choosing TREKKER-MD! 🚀`;
   // Direct transaction status check endpoint (uses smartpay API directly)
   app.post("/api/guest/stkpush/transaction-status", async (req, res) => {
     try {
-      const { CheckoutRequestID } = req.body;
+      const { checkoutRequestId, CheckoutRequestID } = req.body;
+      const requestId = checkoutRequestId || CheckoutRequestID;
 
-      if (!CheckoutRequestID) {
+      if (!requestId) {
         return res.status(400).json({
           success: false,
-          message: "CheckoutRequestID is required"
+          message: "checkoutRequestId is required"
         });
       }
 
-      console.log('🔍 Direct transaction status check for:', CheckoutRequestID);
+      console.log('🔍 Direct transaction status check for:', requestId);
 
       // Call the transaction status API directly
-      const verificationResult = await stkPushService.verifyPayment(CheckoutRequestID);
+      const verificationResult = await stkPushService.verifyPayment(requestId);
       
       if (verificationResult.success) {
         // Update our local database with the response
         try {
-          const transaction = await storage.getStkPushTransaction(CheckoutRequestID);
+          const transaction = await storage.getStkPushTransaction(requestId);
           if (transaction && verificationResult.data) {
             const updateData: any = {
               status: verificationResult.data.status || 'pending',
@@ -3980,8 +3981,8 @@ Thank you for choosing TREKKER-MD! 🚀`;
               updateData.transactionDate = verificationResult.data.transactionDate;
             }
 
-            await storage.updateStkPushTransaction(CheckoutRequestID, updateData);
-            console.log(`✅ Local transaction data updated for ${CheckoutRequestID}`);
+            await storage.updateStkPushTransaction(requestId, updateData);
+            console.log(`✅ Local transaction data updated for ${requestId}`);
           }
         } catch (dbError) {
           console.warn('⚠️ Failed to update local transaction data:', dbError);
