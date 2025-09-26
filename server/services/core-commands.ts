@@ -1437,9 +1437,10 @@ commandRegistry.register({
 });
 
 // Debug command
-commandRegistry.register('debug', {
+commandRegistry.register({
+  name: 'debug',
   description: 'Show debug information',
-  category: 'system',
+  category: 'SYSTEM',
   handler: async (context: CommandContext) => {
     const debugInfo = [
       '🔧 **Debug Information**',
@@ -1460,9 +1461,10 @@ commandRegistry.register('debug', {
 });
 
 // Session status command
-commandRegistry.register('sessions', {
+commandRegistry.register({
+  name: 'sessions',
   description: 'Show current session management status',
-  category: 'system',
+  category: 'SYSTEM',
   handler: async (context: CommandContext) => {
     try {
       // Import bot manager to get session stats
