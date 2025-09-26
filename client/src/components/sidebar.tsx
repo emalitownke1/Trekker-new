@@ -58,25 +58,23 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* Floating expand button - completely outside and on top of everything */}
-      {isCollapsed && (
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => setIsCollapsed(false)}
-          className="fixed top-6 left-20 z-[9999] p-3 bg-primary text-primary-foreground shadow-2xl hover:bg-primary/90 rounded-full border-2 border-background transition-all duration-300 hover:scale-110"
-          data-testid="sidebar-expand-button"
-          title="Expand Sidebar"
-        >
-          <i className="fas fa-bars text-sm"></i>
-        </Button>
-      )}
+      {/* Floating expand button - larger size and always visible */}
+      <Button
+        variant="default"
+        size="lg"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="fixed top-6 left-6 z-[9999] p-4 bg-primary text-primary-foreground shadow-2xl hover:bg-primary/90 rounded-full border-2 border-background transition-all duration-300 hover:scale-110 w-14 h-14"
+        data-testid="sidebar-expand-button"
+        title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+      >
+        <i className={`fas ${isCollapsed ? 'fa-bars' : 'fa-times'} text-lg`}></i>
+      </Button>
       
       <aside 
         ref={sidebarRef}
         className={cn(
-          "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
-          isCollapsed ? "w-16" : "w-64"
+          "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out fixed left-0 top-0 h-full z-[9998]",
+          isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-64 opacity-100"
         )} 
         data-testid="sidebar"
       >
@@ -145,81 +143,7 @@ export default function Sidebar() {
           </>
         )}
 
-        {/* Session ID Tools */}
-        {!isAdmin && !isAuthenticated && (
-          <>
-            <div className="border-t border-border my-4"></div>
-            
-            {isCollapsed ? (
-              /* Collapsed view - icon buttons */
-              <div className="space-y-2 px-2">
-                <Button 
-                  onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  title="Generate Session ID"
-                  data-testid="button-generate-session"
-                >
-                  <i className="fas fa-key"></i>
-                </Button>
-                
-                <Button 
-                  onClick={() => setShowValidateModal(true)}
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  title="Validate Session ID"
-                  data-testid="button-validate-session"
-                >
-                  <i className="fas fa-check-circle"></i>
-                </Button>
-                
-                <Button 
-                  onClick={() => setShowGuestRegistration(true)}
-                  size="sm"
-                  className="w-full bg-green-600 hover:bg-green-700 text-white"
-                  title="Register Bot"
-                  data-testid="sidebar-register-bot"
-                >
-                  <i className="fas fa-plus"></i>
-                </Button>
-              </div>
-            ) : (
-              /* Expanded view - full buttons */
-              <>
-                <Button 
-                  onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
-                  variant="outline"
-                  className="w-full mx-3 mb-3"
-                  data-testid="button-generate-session"
-                >
-                  <i className="fas fa-key mr-2"></i>
-                  Generate Session ID
-                </Button>
-                
-                <Button 
-                  onClick={() => setShowValidateModal(true)}
-                  variant="outline"
-                  className="w-full mx-3 mb-3"
-                  data-testid="button-validate-session"
-                >
-                  <i className="fas fa-check-circle mr-2"></i>
-                  Validate Session ID
-                </Button>
-                
-                <Button 
-                  onClick={() => setShowGuestRegistration(true)}
-                  className="w-full mx-3 bg-green-600 hover:bg-green-700 text-white"
-                  data-testid="sidebar-register-bot"
-                >
-                  <i className="fas fa-plus mr-2"></i>
-                  Register Bot
-                </Button>
-              </>
-            )}
-          </>
-        )}
+        
         
         {/* Admin Console navigation */}
         {isAdmin && (

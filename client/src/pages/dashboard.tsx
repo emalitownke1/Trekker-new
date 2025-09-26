@@ -413,7 +413,84 @@ export default function Dashboard() {
           </Card>
         )}
 
-        
+        {/* Step-by-step Bot Registration Flow - Guest Mode Only */}
+        {!isAdmin && (
+          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-800 mb-6">
+            <CardContent className="p-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-foreground mb-2">🚀 Get Your Bot Running in 3 Easy Steps</h3>
+                <p className="text-muted-foreground">Follow these simple steps to get your TREKKER-MD bot up and running</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Step 1: Generate Session ID */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">1</div>
+                    <h4 className="font-semibold text-foreground mb-2">Generate Session ID</h4>
+                    <p className="text-sm text-muted-foreground mb-4">Get fresh WhatsApp credentials for your bot</p>
+                    <Button 
+                      onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
+                      variant="outline"
+                      className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                      data-testid="dashboard-generate-session"
+                    >
+                      <i className="fas fa-key mr-2"></i>
+                      Generate Session ID
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Step 2: Register Bot */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-700">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">2</div>
+                    <h4 className="font-semibold text-foreground mb-2">Register Your Bot</h4>
+                    <p className="text-sm text-muted-foreground mb-4">Upload credentials and register your bot instance</p>
+                    <Button 
+                      onClick={() => setShowGuestRegistration(true)}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                      data-testid="dashboard-register-bot"
+                    >
+                      <i className="fas fa-plus mr-2"></i>
+                      Register Bot
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Step 3: Pay & Approve */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">3</div>
+                    <h4 className="font-semibold text-foreground mb-2">Pay & Approve</h4>
+                    <p className="text-sm text-muted-foreground mb-4">Complete payment for instant bot approval</p>
+                    <Button 
+                      onClick={() => setShowStkPushModal(true)}
+                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                      data-testid="dashboard-pay-approve"
+                    >
+                      <i className="fas fa-credit-card mr-2"></i>
+                      Pay & Approve Bot
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Access to Bot Management */}
+              <div className="mt-6 text-center">
+                <Link href="/guest/bot-management">
+                  <Button 
+                    variant="outline"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-none hover:from-blue-700 hover:to-purple-700"
+                  >
+                    <i className="fas fa-robot mr-2"></i>
+                    Manage My Bots
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Admin Bot Management or Guest Registration */}
         {isAdmin ? (
@@ -532,48 +609,29 @@ export default function Dashboard() {
             )}
           </div>
         ) : (
-          <div className="max-w-2xl mx-auto">
-            {/* Guest Registration Section */}
+          <div className="max-w-4xl mx-auto">
+            {/* Bot Status Overview for Guests */}
             <Card className="bg-card border-border">
               <CardHeader className="border-b border-border">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-foreground">🚀 Register Your Bot</CardTitle>
-                  <Button 
-                    onClick={() => setShowGuestRegistration(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                    data-testid="button-register-bot"
-                  >
-                    <i className="fas fa-plus mr-2"></i>
-                    Register Bot
-                  </Button>
-                </div>
-                <p className="text-muted-foreground text-sm mt-1">Upload credentials or paste session ID to register your TREKKER-MD bot</p>
+                <CardTitle className="text-lg font-semibold text-foreground">📊 Your Bot Status</CardTitle>
+                <p className="text-muted-foreground text-sm mt-1">Overview of your registered bots and their current status</p>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="text-center py-8">
                   <div className="w-16 h-16 bg-blue-600/10 rounded-lg flex items-center justify-center mx-auto mb-4">
                     <i className="fas fa-robot text-blue-600 text-2xl"></i>
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground mb-2">TREKKER-MD Lifetime Bot</h3>
-                  <p className="text-muted-foreground mb-6">Register your WhatsApp bot with credentials or session ID</p>
-                  <Button 
-                    onClick={() => setShowGuestRegistration(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white w-full max-w-xs"
-                    data-testid="button-start-registration"
-                  >
-                    <i className="fas fa-rocket mr-2"></i>
-                    Register Your Bot
-                  </Button>
-
-                  {/* STK Push Payment Button for Guest Mode */}
-                  <div className="mt-6">
+                  <h3 className="text-lg font-semibold text-foreground mb-2">No Bots Registered Yet</h3>
+                  <p className="text-muted-foreground mb-6">Use the steps above to get your first TREKKER-MD bot running</p>
+                  <Link href="/guest/bot-management">
                     <Button 
-                      onClick={() => setShowStkPushModal(true)}
-                      className="bg-green-600 hover:bg-green-700 text-white"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      data-testid="button-view-bots"
                     >
-                      💳 Pay & Approve Bot
+                      <i className="fas fa-eye mr-2"></i>
+                      View My Bots
                     </Button>
-                  </div>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
