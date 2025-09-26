@@ -191,41 +191,7 @@ export async function initializeDatabase() {
       );
     `;
 
-    // Add missing columns to existing tables (migrations)
-    try {
-      console.log('🔧 Running database migrations...');
-
-      // Check if offer_management table exists and handle migrations
-      const offerTableExists = await client`
-        SELECT EXISTS (
-          SELECT FROM information_schema.tables 
-          WHERE table_schema = 'public' 
-          AND table_name = 'offer_management'
-        )
-      `;
-
-      if (offerTableExists[0].exists) {
-        // Check if description column exists
-        const descriptionColumnExists = await client`
-          SELECT EXISTS (
-            SELECT FROM information_schema.columns 
-            WHERE table_name = 'offer_management' 
-            AND column_name = 'description'
-          )
-        `;
-
-        if (!descriptionColumnExists[0].exists) {
-          await client`
-            ALTER TABLE offer_management ADD COLUMN description TEXT;
-          `;
-          console.log('✅ Added description column to offer_management table');
-        }
-      }
-
-      console.log('✅ Database migrations completed');
-    } catch (migrationError) {
-      console.warn('⚠️ Migration warning:', migrationError);
-    }
+    console.log('✅ Database migrations completed');
 
 
     await client`
@@ -331,6 +297,7 @@ export async function initializeDatabase() {
       )
     `;
 
+    // Create offer_management table with proper structure
     await client`
       CREATE TABLE IF NOT EXISTS offer_management (
         id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -351,6 +318,18 @@ export async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
+
+    // Ensure description column exists (for existing tables)
+    try {
+      await client`
+        ALTER TABLE offer_management ADD COLUMN IF NOT EXISTS description TEXT;
+      `;
+    } catch (alterError: any) {
+      // Column might already exist, which is fine
+      if (!alterError.message.includes('already exists')) {
+        console.warn('⚠️ Could not add description column:', alterError.message);
+      }
+    }
 
     // Handle existing tables that might be missing columns
     try {
