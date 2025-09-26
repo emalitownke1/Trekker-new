@@ -139,6 +139,10 @@ export class WhatsAppBot {
         this.isRunning = true;
         this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
 
+        // Start uptime tracking
+        const { startUptimeTracking } = await import('./core-commands');
+        await startUptimeTracking(this.botInstance.id);
+
         await storage.updateBotInstance(this.botInstance.id, { 
           status: 'online',
           lastActivity: new Date()
@@ -884,6 +888,10 @@ export class WhatsAppBot {
     this.stopPresenceAutoSwitch(); // Stop presence auto-switch when bot stops
 
     try {
+      // Update uptime before stopping
+      const { updateBotUptime } = await import('./core-commands');
+      await updateBotUptime(this.botInstance.id);
+
       if (this.sock) {
         // Remove all event listeners to prevent conflicts
         this.sock.ev.removeAllListeners();

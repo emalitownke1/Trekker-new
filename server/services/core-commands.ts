@@ -605,6 +605,615 @@ commandRegistry.register({
   }
 });
 
+// Register bot management commands
+commandRegistry.register({
+  name: 'autolike',
+  aliases: ['autostatuslike'],
+  description: 'Toggle auto-like for status updates (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, args, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      let newStatus: boolean;
+      let likeEmoji = '❤️'; // Default emoji
+
+      if (args.length === 0) {
+        // Toggle current status
+        newStatus = !bot.autoLike;
+      } else {
+        const command = args[0].toLowerCase();
+        if (command === 'on') {
+          newStatus = true;
+          // Check if emoji is provided
+          if (args[1]) {
+            likeEmoji = args[1];
+          }
+        } else if (command === 'off') {
+          newStatus = false;
+        } else {
+          await respond('❌ Invalid command! Use: .autolike on/off [emoji]\n\n*Example:* .autolike on ❤️');
+          return;
+        }
+      }
+
+      await storage.updateBotInstance(botId!, { autoLike: newStatus });
+      
+      if (newStatus) {
+        await respond(`✅ Auto-like for status updates has been enabled!\nBot will automatically like status updates with ${likeEmoji}\n\n💡 *Usage:* Send .autolike on [emoji] to change the emoji`);
+      } else {
+        await respond('❌ Auto-like for status updates has been disabled!');
+      }
+
+    } catch (error) {
+      console.error('Error in autolike command:', error);
+      await respond('❌ Error managing auto-like settings.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'autoview',
+  aliases: ['autoviewstatus'],
+  description: 'Toggle auto-view for status updates (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, args, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      let newStatus: boolean;
+
+      if (args.length === 0) {
+        // Show current status
+        await respond(`📱 *Auto View Status*\n\nCurrent Status: ${bot.autoViewStatus ? '✅ Enabled' : '❌ Disabled'}\n\n*Commands:*\n.autoview on - Enable auto view status\n.autoview off - Disable auto view status`);
+        return;
+      }
+
+      const command = args[0].toLowerCase();
+      if (command === 'on') {
+        newStatus = true;
+      } else if (command === 'off') {
+        newStatus = false;
+      } else {
+        await respond('❌ Invalid command! Use: .autoview on/off');
+        return;
+      }
+
+      await storage.updateBotInstance(botId!, { autoViewStatus: newStatus });
+      
+      if (newStatus) {
+        await respond('✅ Auto-view for status updates has been enabled!\nBot will automatically view all contact status updates.');
+      } else {
+        await respond('❌ Auto-view for status updates has been disabled!');
+      }
+
+    } catch (error) {
+      console.error('Error in autoview command:', error);
+      await respond('❌ Error managing auto-view settings.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'autoread',
+  aliases: ['autoreadmessages'],
+  description: 'Toggle auto-read (blue ticks) for messages (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, args, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      const settings = bot.settings as any || {};
+      let newStatus: boolean;
+
+      if (args.length === 0) {
+        // Show current status
+        await respond(`📖 *Auto Read Messages*\n\nCurrent Status: ${settings.autoRead ? '✅ Enabled' : '❌ Disabled'}\n\n*Commands:*\n.autoread on - Enable auto read (blue ticks)\n.autoread off - Disable auto read`);
+        return;
+      }
+
+      const command = args[0].toLowerCase();
+      if (command === 'on') {
+        newStatus = true;
+      } else if (command === 'off') {
+        newStatus = false;
+      } else {
+        await respond('❌ Invalid command! Use: .autoread on/off');
+        return;
+      }
+
+      settings.autoRead = newStatus;
+      await storage.updateBotInstance(botId!, { settings });
+      
+      if (newStatus) {
+        await respond('✅ Auto-read has been enabled!\nBot will automatically mark all messages as read (blue ticks).');
+      } else {
+        await respond('❌ Auto-read has been disabled!\nMessages will not be automatically marked as read.');
+      }
+
+    } catch (error) {
+      console.error('Error in autoread command:', error);
+      await respond('❌ Error managing auto-read settings.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'autoreact',
+  aliases: ['autoreactmessages'],
+  description: 'Toggle auto-react to messages (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, args, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      let newStatus: boolean;
+
+      if (args.length === 0) {
+        // Show current status
+        await respond(`😀 *Auto React Messages*\n\nCurrent Status: ${bot.autoReact ? '✅ Enabled' : '❌ Disabled'}\n\n*Commands:*\n.autoreact on - Enable auto react to messages\n.autoreact off - Disable auto react`);
+        return;
+      }
+
+      const command = args[0].toLowerCase();
+      if (command === 'on') {
+        newStatus = true;
+      } else if (command === 'off') {
+        newStatus = false;
+      } else {
+        await respond('❌ Invalid command! Use: .autoreact on/off');
+        return;
+      }
+
+      await storage.updateBotInstance(botId!, { autoReact: newStatus });
+      
+      if (newStatus) {
+        await respond('✅ Auto-react has been enabled!\nBot will automatically react to incoming messages with random emojis.');
+      } else {
+        await respond('❌ Auto-react has been disabled!\nBot will not react to messages automatically.');
+      }
+
+    } catch (error) {
+      console.error('Error in autoreact command:', error);
+      await respond('❌ Error managing auto-react settings.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'presence',
+  aliases: ['presencemode'],
+  description: 'Configure bot presence mode (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, args, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      if (args.length === 0) {
+        // Show current status
+        const presenceMode = bot.presenceMode || 'available';
+        const alwaysOnline = bot.alwaysOnline ? '✅ Enabled' : '❌ Disabled';
+        const autoSwitch = bot.presenceAutoSwitch ? '✅ Enabled' : '❌ Disabled';
+        
+        await respond(`👁️ *Presence Configuration*\n\n📱 *Current Mode:* ${presenceMode}\n🌐 *Always Online:* ${alwaysOnline}\n🔄 *Auto Switch:* ${autoSwitch}\n\n*Available Modes:*\n• available - Always online\n• composing - Always typing\n• recording - Always recording\n• unavailable - Appear offline\n\n*Commands:*\n.presence <mode> - Set presence mode\n.presence online on/off - Toggle always online\n.presence autoswitch on/off - Toggle auto switch typing/recording`);
+        return;
+      }
+
+      const command = args[0].toLowerCase();
+
+      if (command === 'online') {
+        if (args[1]) {
+          const status = args[1].toLowerCase() === 'on';
+          await storage.updateBotInstance(botId!, { alwaysOnline: status });
+          await respond(`${status ? '✅' : '❌'} Always online has been ${status ? 'enabled' : 'disabled'}!`);
+        } else {
+          await respond('❌ Please specify on/off for always online mode!');
+        }
+        return;
+      }
+
+      if (command === 'autoswitch') {
+        if (args[1]) {
+          const status = args[1].toLowerCase() === 'on';
+          await storage.updateBotInstance(botId!, { presenceAutoSwitch: status });
+          await respond(`${status ? '✅' : '❌'} Auto switch typing/recording has been ${status ? 'enabled' : 'disabled'}!`);
+        } else {
+          await respond('❌ Please specify on/off for auto switch mode!');
+        }
+        return;
+      }
+
+      // Set presence mode
+      const validModes = ['available', 'composing', 'recording', 'unavailable'];
+      if (!validModes.includes(command)) {
+        await respond('❌ Invalid presence mode! Valid modes: available, composing, recording, unavailable');
+        return;
+      }
+
+      await storage.updateBotInstance(botId!, { presenceMode: command });
+      await respond(`✅ Presence mode set to: *${command}*`);
+
+    } catch (error) {
+      console.error('Error in presence command:', error);
+      await respond('❌ Error managing presence settings.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'prefix',
+  aliases: ['commandprefix'],
+  description: 'Change bot command prefix (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, args, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      if (args.length === 0) {
+        // Show current prefix
+        const currentPrefix = bot.commandPrefix || '.';
+        await respond(`🔧 *Command Prefix*\n\nCurrent Prefix: \`${currentPrefix}\`\n\n*Usage:* .prefix <symbol>\n*Examples:* .prefix ! or .prefix + or .prefix #\n\n⚠️ *Note:* Prefix must be a single symbol, not a string.`);
+        return;
+      }
+
+      const newPrefix = args[0];
+
+      // Validate prefix - must be single character and not alphanumeric
+      if (newPrefix.length !== 1) {
+        await respond('❌ Prefix must be a single character!\n\n*Examples:* . ! + # * & % $');
+        return;
+      }
+
+      if (/[a-zA-Z0-9]/.test(newPrefix)) {
+        await respond('❌ Prefix cannot be a letter or number!\n\n*Valid symbols:* . ! + # * & % $ @ ^ ~ - _');
+        return;
+      }
+
+      await storage.updateBotInstance(botId!, { commandPrefix: newPrefix });
+      await respond(`✅ Command prefix changed to: \`${newPrefix}\`\n\n💡 *Example:* ${newPrefix}help`);
+
+    } catch (error) {
+      console.error('Error in prefix command:', error);
+      await respond('❌ Error changing command prefix.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'expiry',
+  aliases: ['expire', 'expirydate'],
+  description: 'Check bot expiry information',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, botId } = context;
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      if (bot.approvalStatus !== 'approved') {
+        await respond(`⏳ *Bot Status*\n\nApproval Status: ${bot.approvalStatus}\n\n💡 Bot must be approved before expiry tracking begins.`);
+        return;
+      }
+
+      if (!bot.approvalDate || !bot.expirationMonths) {
+        await respond('📅 *Expiry Information*\n\n✅ This is a lifetime bot with no expiration date!\n\n🎉 Enjoy unlimited access to all features.');
+        return;
+      }
+
+      // Calculate expiry date
+      const approvalDate = new Date(bot.approvalDate);
+      const expiryDate = new Date(approvalDate);
+      expiryDate.setMonth(expiryDate.getMonth() + bot.expirationMonths);
+
+      const now = new Date();
+      const timeLeft = expiryDate.getTime() - now.getTime();
+      
+      if (timeLeft <= 0) {
+        await respond('❌ *Bot Expired*\n\n⏰ Your bot subscription has expired.\n📞 Contact support to renew your subscription.');
+        return;
+      }
+
+      const daysLeft = Math.ceil(timeLeft / (1000 * 60 * 60 * 24));
+      const hoursLeft = Math.ceil(timeLeft / (1000 * 60 * 60));
+
+      let timeString = '';
+      if (daysLeft > 1) {
+        timeString = `${daysLeft} days`;
+      } else if (hoursLeft > 1) {
+        timeString = `${hoursLeft} hours`;
+      } else {
+        timeString = 'Less than 1 hour';
+      }
+
+      let statusEmoji = '✅';
+      let warningText = '';
+      
+      if (daysLeft <= 1) {
+        statusEmoji = '🚨';
+        warningText = '\n\n🚨 *URGENT:* Bot expires soon! Contact support immediately.';
+      } else if (daysLeft <= 7) {
+        statusEmoji = '⚠️';
+        warningText = '\n\n⚠️ *WARNING:* Bot expires within a week. Consider renewing soon.';
+      } else if (daysLeft <= 30) {
+        statusEmoji = '⏰';
+        warningText = '\n\n⏰ *NOTICE:* Bot expires within a month.';
+      }
+
+      await respond(`${statusEmoji} *Bot Expiry Information*\n\n📅 *Approved:* ${approvalDate.toDateString()}\n⏰ *Expires:* ${expiryDate.toDateString()}\n⏳ *Time Left:* ${timeString}\n📊 *Duration:* ${bot.expirationMonths} months${warningText}`);
+
+    } catch (error) {
+      console.error('Error in expiry command:', error);
+      await respond('❌ Error retrieving expiry information.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'restart',
+  aliases: ['restartbot'],
+  description: 'Restart the bot (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      await respond('🔄 *Restarting Bot...*\n\nBot will restart in a few seconds.\nPlease wait for reconnection.');
+
+      // Import bot manager and restart the bot
+      const { botManager } = await import('./bot-manager');
+      
+      // Update uptime before restart
+      await updateBotUptime(botId!);
+      
+      setTimeout(async () => {
+        try {
+          await botManager.restartBot(botId!);
+        } catch (error) {
+          console.error('Error restarting bot:', error);
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error in restart command:', error);
+      await respond('❌ Error restarting bot.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'reboot',
+  aliases: ['rebootbot'],
+  description: 'Reboot the bot (hard restart) (Owner only)',
+  category: 'BOT_CONTROL',
+  handler: async (context: CommandContext) => {
+    const { respond, message, botId } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      await respond('⚡ *Rebooting Bot...*\n\nPerforming hard restart with session cleanup.\nThis may take longer than a normal restart.');
+
+      // Import bot manager and perform hard reboot
+      const { botManager } = await import('./bot-manager');
+      
+      // Update uptime before reboot
+      await updateBotUptime(botId!);
+      
+      setTimeout(async () => {
+        try {
+          await botManager.stopBot(botId!);
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
+          await botManager.startBot(botId!);
+        } catch (error) {
+          console.error('Error rebooting bot:', error);
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error in reboot command:', error);
+      await respond('❌ Error rebooting bot.');
+    }
+  }
+});
+
+// Helper function to update bot uptime
+async function updateBotUptime(botId: string) {
+  try {
+    const { storage } = await import('../storage');
+    const bot = await storage.getBotInstance(botId);
+    
+    if (!bot) return;
+
+    const now = new Date();
+    let totalUptime = bot.totalUptimeSeconds || 0;
+
+    if (bot.uptimeStartedAt) {
+      const sessionUptime = Math.floor((now.getTime() - new Date(bot.uptimeStartedAt).getTime()) / 1000);
+      totalUptime += sessionUptime;
+    }
+
+    await storage.updateBotInstance(botId, {
+      totalUptimeSeconds: totalUptime,
+      lastUptimeUpdate: now,
+      uptimeStartedAt: null // Reset for next session
+    });
+  } catch (error) {
+    console.error('Error updating bot uptime:', error);
+  }
+}
+
+// Helper function to start uptime tracking
+async function startUptimeTracking(botId: string) {
+  try {
+    const { storage } = await import('../storage');
+    await storage.updateBotInstance(botId, {
+      uptimeStartedAt: new Date()
+    });
+  } catch (error) {
+    console.error('Error starting uptime tracking:', error);
+  }
+}
+
+commandRegistry.register({
+  name: 'uptime',
+  aliases: ['botuptime'],
+  description: 'Show bot uptime statistics',
+  category: 'SYSTEM',
+  handler: async (context: CommandContext) => {
+    const { respond, botId } = context;
+
+    try {
+      const { storage } = await import('../storage');
+      const bot = await storage.getBotInstance(botId!);
+      
+      if (!bot) {
+        await respond('❌ Bot instance not found!');
+        return;
+      }
+
+      const now = new Date();
+      let totalUptime = bot.totalUptimeSeconds || 0;
+      let currentSessionUptime = 0;
+
+      // Calculate current session uptime
+      if (bot.uptimeStartedAt) {
+        currentSessionUptime = Math.floor((now.getTime() - new Date(bot.uptimeStartedAt).getTime()) / 1000);
+      }
+
+      // Total uptime including current session
+      const combinedUptime = totalUptime + currentSessionUptime;
+
+      // Format uptime
+      const formatUptime = (seconds: number) => {
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = Math.floor(seconds % 60);
+
+        const parts = [];
+        if (days > 0) parts.push(`${days}d`);
+        if (hours > 0) parts.push(`${hours}h`);
+        if (minutes > 0) parts.push(`${minutes}m`);
+        if (remainingSeconds > 0) parts.push(`${remainingSeconds}s`);
+
+        return parts.length > 0 ? parts.join(' ') : '0s';
+      };
+
+      const lastUpdate = bot.lastUptimeUpdate ? new Date(bot.lastUptimeUpdate).toLocaleString() : 'Never';
+      const sessionStart = bot.uptimeStartedAt ? new Date(bot.uptimeStartedAt).toLocaleString() : 'Not running';
+
+      await respond(`⏰ *Bot Uptime Statistics*\n\n🕐 *Current Session:* ${formatUptime(currentSessionUptime)}\n📊 *Total Uptime:* ${formatUptime(combinedUptime)}\n🗓️ *Session Started:* ${sessionStart}\n📅 *Last Update:* ${lastUpdate}\n\n✅ *Status:* ${bot.status}\n🤖 *Bot:* ${bot.name}`);
+
+    } catch (error) {
+      console.error('Error in uptime command:', error);
+      await respond('❌ Error retrieving uptime information.');
+    }
+  }
+});
+
+// Export helper functions
+export { updateBotUptime, startUptimeTracking };
+
 // Register animation commands
 commandRegistry.register({
   name: 'happy',

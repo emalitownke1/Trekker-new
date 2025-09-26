@@ -62,6 +62,10 @@ export const botInstances = pgTable("bot_instances", {
   credentialPhone: text("credential_phone"), // phone number extracted from verified credentials
   invalidReason: text("invalid_reason"), // reason why bot is considered invalid
   authMessageSentAt: timestamp("auth_message_sent_at"), // timestamp when auth message was sent
+  uptimeStartedAt: timestamp("uptime_started_at"), // when bot uptime tracking started
+  totalUptimeSeconds: integer("total_uptime_seconds").default(0), // accumulated uptime in seconds
+  lastUptimeUpdate: timestamp("last_uptime_update"), // last time uptime was updated
+  commandPrefix: text("command_prefix").default("."), // bot command prefix
   serverName: text("server_name").notNull(), // isolate by server instance
   createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),

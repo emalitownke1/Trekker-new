@@ -293,6 +293,10 @@ export async function initializeDatabase() {
           await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS is_guest BOOLEAN DEFAULT false`;
           await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS approval_date TEXT`;
           await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS expiration_months INTEGER`;
+          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS uptime_started_at TIMESTAMP`;
+          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS total_uptime_seconds INTEGER DEFAULT 0`;
+          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS last_uptime_update TIMESTAMP`;
+          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS command_prefix TEXT DEFAULT '.'`;
           await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS server_name TEXT`;
           
           // Update existing rows without server_name to use current server
