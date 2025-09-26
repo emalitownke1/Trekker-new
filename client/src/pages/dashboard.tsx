@@ -431,45 +431,92 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* TREKKER-MD Welcome & Contact */}
-        <Card className="bg-gradient-to-r from-blue-600 to-purple-600 border-none mb-8 text-white">
-          <CardContent className="p-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold mb-2">🚀 TREKKER-MD LIFETIME BOT</h3>
-              <p className="text-blue-100 mb-4">Ultra fast WhatsApp automation - No expiry, Lifetime access</p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-sm">
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-center mb-2">
-                    <i className="fab fa-telegram text-xl"></i>
+        {/* Guest Remote Server Stats */}
+        {!isAdmin && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Server Bots</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {serverInfo.currentBots || 0}/{serverInfo.maxBots || 0}
+                    </p>
                   </div>
-                  <p className="font-medium">Telegram</p>
-                  <p className="text-xs text-blue-100">@trekkermd_</p>
-                </div>
-
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-center mb-2">
-                    <i className="fab fa-whatsapp text-xl"></i>
+                  <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-server text-blue-400 text-lg"></i>
                   </div>
-                  <p className="font-medium">WhatsApp</p>
-                  <p className="text-xs text-blue-100">+254704897825</p>
                 </div>
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className="text-green-400 text-sm">{Math.max(0, (serverInfo.maxBots || 0) - (serverInfo.currentBots || 0))}</span>
+                  <span className="text-muted-foreground text-sm">slots free</span>
+                </div>
+              </CardContent>
+            </Card>
 
-                <div className="bg-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-center mb-2">
-                    <i className="fab fa-instagram text-xl"></i>
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Active Now</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {(stats as any)?.activeBots || 0}
+                    </p>
                   </div>
-                  <p className="font-medium">Instagram</p>
-                  <p className="text-xs text-blue-100">@nicholaso_tesla</p>
+                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-circle text-green-400 text-lg"></i>
+                  </div>
                 </div>
-              </div>
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className="text-green-400 text-sm">Live</span>
+                  <span className="text-muted-foreground text-sm">connections</span>
+                </div>
+              </CardContent>
+            </Card>
 
-              <p className="text-xs text-blue-200 mt-4">
-                {isAdmin ? 'Admin access - Full system control' : 'Upload base64 credentials to deploy your bot instantly'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Server Load</p>
+                    <p className="text-xl font-bold text-foreground">
+                      {serverInfo.maxBots > 0 ? Math.round(((serverInfo.currentBots || 0) / serverInfo.maxBots) * 100) : 0}%
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-chart-line text-purple-400 text-lg"></i>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className={`text-sm ${(serverInfo.currentBots || 0) / (serverInfo.maxBots || 1) > 0.8 ? 'text-red-400' : 'text-green-400'}`}>
+                    {(serverInfo.currentBots || 0) / (serverInfo.maxBots || 1) > 0.8 ? 'High' : 'Normal'}
+                  </span>
+                  <span className="text-muted-foreground text-sm">usage</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-muted-foreground text-sm">Response Time</p>
+                    <p className="text-xl font-bold text-foreground">
+                      &lt;100ms
+                    </p>
+                  </div>
+                  <div className="w-10 h-10 bg-yellow-500/10 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-bolt text-yellow-400 text-lg"></i>
+                  </div>
+                </div>
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className="text-green-400 text-sm">Ultra Fast</span>
+                  <span className="text-muted-foreground text-sm">servers</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Admin Bot Management or Guest Registration */}
         {isAdmin ? (
@@ -635,6 +682,46 @@ export default function Dashboard() {
             </Card>
           </div>
         )}
+
+        {/* TREKKER-MD Welcome & Contact - Bottom Section */}
+        <Card className="bg-gradient-to-r from-blue-600 to-purple-600 border-none mt-8 text-white">
+          <CardContent className="p-6">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold mb-2">🚀 TREKKER-MD LIFETIME BOT</h3>
+              <p className="text-blue-100 mb-4">Ultra fast WhatsApp automation - No expiry, Lifetime access</p>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-sm">
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="flex items-center justify-center mb-2">
+                    <i className="fab fa-telegram text-xl"></i>
+                  </div>
+                  <p className="font-medium">Telegram</p>
+                  <p className="text-xs text-blue-100">@trekkermd_</p>
+                </div>
+
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="flex items-center justify-center mb-2">
+                    <i className="fab fa-whatsapp text-xl"></i>
+                  </div>
+                  <p className="font-medium">WhatsApp</p>
+                  <p className="text-xs text-blue-100">+254704897825</p>
+                </div>
+
+                <div className="bg-white/10 rounded-lg p-3">
+                  <div className="flex items-center justify-center mb-2">
+                    <i className="fab fa-instagram text-xl"></i>
+                  </div>
+                  <p className="font-medium">Instagram</p>
+                  <p className="text-xs text-blue-100">@nicholaso_tesla</p>
+                </div>
+              </div>
+
+              <p className="text-xs text-blue-200 mt-4">
+                {isAdmin ? 'Admin access - Full system control' : 'Upload base64 credentials to deploy your bot instantly'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <AddBotModal open={showAddBotModal} onClose={() => setShowAddBotModal(false)} />
