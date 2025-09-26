@@ -308,5 +308,6 @@ export default function Sidebar() {
         onClose={() => setShowGuestRegistration(false)} 
       />
     </aside>
+    </>
   );
 }
