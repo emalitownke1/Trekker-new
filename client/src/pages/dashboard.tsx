@@ -66,6 +66,7 @@ export default function Dashboard() {
   const [selectedBotForFeatures, setSelectedBotForFeatures] = useState<BotInstance | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<GodRegistryEntry | null>(null);
   const [showStkPushModal, setShowStkPushModal] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
 
   // Fetch dashboard stats
@@ -110,7 +111,7 @@ export default function Dashboard() {
   // Fetch current offer information (available to all users)
   const { data: offerInfo, isLoading: offerLoading } = useQuery({
     queryKey: ["/api/offer/current"],
-    refetchInterval: 60000, // Refresh every minute to update countdown
+    refetchInterval: 1000, // Refresh every second for real-time countdown
   });
 
   // Fetch God registry for admin
@@ -216,6 +217,15 @@ export default function Dashboard() {
       toast({ title: "Failed to delete registration", variant: "destructive" });
     }
   });
+
+  // Real-time countdown timer
+  React.useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   // Auto-refresh for admin users
   React.useEffect(() => {
@@ -381,26 +391,44 @@ export default function Dashboard() {
                 <h3 className="text-2xl font-bold mb-2">🎁 SPECIAL OFFER ACTIVE!</h3>
                 <p className="text-green-100 mb-4">{offerInfo.offer?.name} - Limited Time Only!</p>
                 
-                {offerInfo.timeRemaining && (
-                  <div className="grid grid-cols-4 gap-4 mb-4">
-                    <div className="bg-white/20 rounded-lg p-3">
-                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.days}</div>
-                      <div className="text-sm text-green-100">Days</div>
+                {offerInfo.offer?.endTime && (() => {
+                  const endTime = new Date(offerInfo.offer.endTime);
+                  const timeDiff = endTime.getTime() - currentTime.getTime();
+                  
+                  if (timeDiff <= 0) {
+                    return (
+                      <div className="bg-white/20 rounded-lg p-4 text-center">
+                        <p className="text-lg font-bold text-red-200">Offer Expired</p>
+                      </div>
+                    );
+                  }
+                  
+                  const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                  const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                  const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+                  
+                  return (
+                    <div className="grid grid-cols-4 gap-4 mb-4">
+                      <div className="bg-white/20 rounded-lg p-3">
+                        <div className="text-2xl font-bold">{days}</div>
+                        <div className="text-sm text-green-100">Days</div>
+                      </div>
+                      <div className="bg-white/20 rounded-lg p-3">
+                        <div className="text-2xl font-bold">{hours}</div>
+                        <div className="text-sm text-green-100">Hours</div>
+                      </div>
+                      <div className="bg-white/20 rounded-lg p-3">
+                        <div className="text-2xl font-bold">{minutes}</div>
+                        <div className="text-sm text-green-100">Minutes</div>
+                      </div>
+                      <div className="bg-white/20 rounded-lg p-3">
+                        <div className="text-2xl font-bold">{seconds}</div>
+                        <div className="text-sm text-green-100">Seconds</div>
+                      </div>
                     </div>
-                    <div className="bg-white/20 rounded-lg p-3">
-                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.hours}</div>
-                      <div className="text-sm text-green-100">Hours</div>
-                    </div>
-                    <div className="bg-white/20 rounded-lg p-3">
-                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.minutes}</div>
-                      <div className="text-sm text-green-100">Minutes</div>
-                    </div>
-                    <div className="bg-white/20 rounded-lg p-3">
-                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.seconds}</div>
-                      <div className="text-sm text-green-100">Seconds</div>
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
                 
                 <div className="bg-white/10 rounded-lg p-4">
                   <p className="font-semibold text-lg">🚀 Register now and get instant approval!</p>
