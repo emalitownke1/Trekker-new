@@ -206,163 +206,180 @@ export async function initializeDatabase() {
     }
 
 
-        await client`
-          CREATE TABLE IF NOT EXISTS users (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'user',
-            server_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        server_name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        await client`
-          CREATE TABLE IF NOT EXISTS bot_instances (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
-            phone_number TEXT,
-            status TEXT NOT NULL DEFAULT 'offline',
-            credentials JSONB,
-            settings JSONB DEFAULT '{}',
-            auto_like BOOLEAN DEFAULT false,
-            auto_view_status BOOLEAN DEFAULT false,
-            auto_react BOOLEAN DEFAULT false,
-            typing_mode TEXT DEFAULT 'none',
-            chatgpt_enabled BOOLEAN DEFAULT false,
-            last_activity TIMESTAMP,
-            messages_count INTEGER DEFAULT 0,
-            commands_count INTEGER DEFAULT 0,
-            approval_status TEXT DEFAULT 'pending',
-            is_guest BOOLEAN DEFAULT false,
-            approval_date TEXT,
-            expiration_months INTEGER,
-            server_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS bot_instances (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        phone_number TEXT,
+        status TEXT NOT NULL DEFAULT 'offline',
+        credentials JSONB,
+        settings JSONB DEFAULT '{}',
+        auto_like BOOLEAN DEFAULT false,
+        auto_view_status BOOLEAN DEFAULT false,
+        auto_react BOOLEAN DEFAULT false,
+        typing_mode TEXT DEFAULT 'none',
+        chatgpt_enabled BOOLEAN DEFAULT false,
+        last_activity TIMESTAMP,
+        messages_count INTEGER DEFAULT 0,
+        commands_count INTEGER DEFAULT 0,
+        approval_status TEXT DEFAULT 'pending',
+        is_guest BOOLEAN DEFAULT false,
+        approval_date TEXT,
+        expiration_months INTEGER,
+        server_name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        await client`
-          CREATE TABLE IF NOT EXISTS commands (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            name TEXT NOT NULL,
-            description TEXT NOT NULL,
-            response TEXT,
-            is_active BOOLEAN DEFAULT true,
-            use_chatgpt BOOLEAN DEFAULT false,
-            bot_instance_id VARCHAR,
-            server_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS commands (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        description TEXT NOT NULL,
+        response TEXT,
+        is_active BOOLEAN DEFAULT true,
+        use_chatgpt BOOLEAN DEFAULT false,
+        bot_instance_id VARCHAR,
+        server_name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        await client`
-          CREATE TABLE IF NOT EXISTS activities (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            bot_instance_id VARCHAR,
-            type TEXT NOT NULL,
-            description TEXT NOT NULL,
-            metadata JSONB DEFAULT '{}',
-            server_name TEXT NOT NULL,
-            remote_tenancy TEXT,
-            remote_bot_id TEXT,
-            phone_number TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS activities (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        bot_instance_id VARCHAR,
+        type TEXT NOT NULL,
+        description TEXT NOT NULL,
+        metadata JSONB DEFAULT '{}',
+        server_name TEXT NOT NULL,
+        remote_tenancy TEXT,
+        remote_bot_id TEXT,
+        phone_number TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        await client`
-          CREATE TABLE IF NOT EXISTS groups (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            whatsapp_id TEXT NOT NULL UNIQUE,
-            name TEXT NOT NULL,
-            description TEXT,
-            participant_count INTEGER DEFAULT 0,
-            bot_instance_id VARCHAR NOT NULL,
-            is_active BOOLEAN DEFAULT true,
-            server_name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS groups (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        whatsapp_id TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        description TEXT,
+        participant_count INTEGER DEFAULT 0,
+        bot_instance_id VARCHAR NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        server_name TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        await client`
-          CREATE TABLE IF NOT EXISTS god_register (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            phone_number TEXT NOT NULL UNIQUE,
-            tenancy_name TEXT NOT NULL,
-            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS god_register (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        phone_number TEXT NOT NULL UNIQUE,
+        tenancy_name TEXT NOT NULL,
+        registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        await client`
-          CREATE TABLE IF NOT EXISTS server_registry (
-            id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-            server_name TEXT NOT NULL UNIQUE,
-            max_bot_count INTEGER NOT NULL,
-            current_bot_count INTEGER DEFAULT 0,
-            server_status TEXT DEFAULT 'active',
-            server_url TEXT,
-            description TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-          )
-        `;
+    await client`
+      CREATE TABLE IF NOT EXISTS server_registry (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        server_name TEXT NOT NULL UNIQUE,
+        max_bot_count INTEGER NOT NULL,
+        current_bot_count INTEGER DEFAULT 0,
+        server_status TEXT DEFAULT 'active',
+        server_url TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-        // Handle existing tables that might be missing columns
-        try {
-          // Update bot_instances table
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'pending'`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS is_guest BOOLEAN DEFAULT false`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS approval_date TEXT`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS expiration_months INTEGER`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS uptime_started_at TIMESTAMP`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS total_uptime_seconds INTEGER DEFAULT 0`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS last_uptime_update TIMESTAMP`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS command_prefix TEXT DEFAULT '.'`;
-          await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS server_name TEXT`;
+    await client`
+      CREATE TABLE IF NOT EXISTS offer_management (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        offer_name TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT true,
+        offer_config JSONB DEFAULT '{}',
+        duration_days INTEGER DEFAULT 0,
+        duration_months INTEGER DEFAULT 0,
+        start_time TIMESTAMP,
+        end_time TIMESTAMP,
+        server_name TEXT NOT NULL,
+        description TEXT,
+        auto_approval BOOLEAN DEFAULT false,
+        max_bots INTEGER DEFAULT 1,
+        current_usage INTEGER DEFAULT 0,
+        created_by TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
 
-          // Update existing rows without server_name to use current server
-          await client`UPDATE bot_instances SET server_name = ${serverName} WHERE server_name IS NULL`;
+    // Handle existing tables that might be missing columns
+    try {
+      // Update bot_instances table
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS approval_status TEXT DEFAULT 'pending'`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS is_guest BOOLEAN DEFAULT false`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS approval_date TEXT`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS expiration_months INTEGER`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS uptime_started_at TIMESTAMP`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS total_uptime_seconds INTEGER DEFAULT 0`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS last_uptime_update TIMESTAMP`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS command_prefix TEXT DEFAULT '.'`;
+      await client`ALTER TABLE bot_instances ADD COLUMN IF NOT EXISTS server_name TEXT`;
 
-          // Make server_name NOT NULL after setting values
-          await client`ALTER TABLE bot_instances ALTER COLUMN server_name SET NOT NULL`;
+      // Update existing rows without server_name to use current server
+      await client`UPDATE bot_instances SET server_name = ${serverName} WHERE server_name IS NULL`;
 
-          // Update other tables with server_name column
-          await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS server_name TEXT`;
-          await client`UPDATE users SET server_name = ${serverName} WHERE server_name IS NULL`;
-          await client`ALTER TABLE users ALTER COLUMN server_name SET NOT NULL`;
+      // Make server_name NOT NULL after setting values
+      await client`ALTER TABLE bot_instances ALTER COLUMN server_name SET NOT NULL`;
 
-          await client`ALTER TABLE commands ADD COLUMN IF NOT EXISTS server_name TEXT`;
-          await client`UPDATE commands SET server_name = ${serverName} WHERE server_name IS NULL`;
-          await client`ALTER TABLE commands ALTER COLUMN server_name SET NOT NULL`;
+      // Update other tables with server_name column
+      await client`ALTER TABLE users ADD COLUMN IF NOT EXISTS server_name TEXT`;
+      await client`UPDATE users SET server_name = ${serverName} WHERE server_name IS NULL`;
+      await client`ALTER TABLE users ALTER COLUMN server_name SET NOT NULL`;
 
-          await client`ALTER TABLE activities ADD COLUMN IF NOT EXISTS server_name TEXT`;
-          await client`UPDATE activities SET server_name = ${serverName} WHERE server_name IS NULL`;
-          await client`ALTER TABLE activities ALTER COLUMN server_name SET NOT NULL`;
+      await client`ALTER TABLE commands ADD COLUMN IF NOT EXISTS server_name TEXT`;
+      await client`UPDATE commands SET server_name = ${serverName} WHERE server_name IS NULL`;
+      await client`ALTER TABLE commands ALTER COLUMN server_name SET NOT NULL`;
 
-          await client`ALTER TABLE groups ADD COLUMN IF NOT EXISTS server_name TEXT`;
-          await client`UPDATE groups SET server_name = ${serverName} WHERE server_name IS NULL`;
-          await client`ALTER TABLE groups ALTER COLUMN server_name SET NOT NULL`;
+      await client`ALTER TABLE activities ADD COLUMN IF NOT EXISTS server_name TEXT`;
+      await client`UPDATE activities SET server_name = ${serverName} WHERE server_name IS NULL`;
+      await client`ALTER TABLE activities ALTER COLUMN server_name SET NOT NULL`;
 
-          console.log('✅ Database schema updated with missing columns');
-        } catch (alterError: any) {
-          console.log('ℹ️ Some schema updates may have already been applied:', alterError.message);
-        }
+      await client`ALTER TABLE groups ADD COLUMN IF NOT EXISTS server_name TEXT`;
+      await client`UPDATE groups SET server_name = ${serverName} WHERE server_name IS NULL`;
+      await client`ALTER TABLE groups ALTER COLUMN server_name SET NOT NULL`;
 
-      console.log('✅ Database tables created/updated successfully');
-
-      // Initialize server registry for multi-tenancy after tables are created
-      const { storage } = await import('./storage');
-      await storage.checkAndExpireBots();
-      await storage.initializeCurrentServer();
-
-    } catch (createError: any) {
-      console.error('❌ Failed to create/update database tables:', createError);
-      throw createError;
+      console.log('✅ Database schema updated with missing columns');
+    } catch (alterError: any) {
+      console.log('ℹ️ Some schema updates may have already been applied:', alterError.message);
     }
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error);
-    throw error;
+
+    console.log('✅ Database tables created/updated successfully');
+
+    // Initialize server registry for multi-tenancy after tables are created
+    const { storage } = await import('./storage');
+    await storage.checkAndExpireBots();
+    await storage.initializeCurrentServer();
+
+  } catch (createError: any) {
+    console.error('❌ Failed to create/update database tables:', createError);
+    throw createError;
   }
 }
