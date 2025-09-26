@@ -58,30 +58,31 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Expand button positioned outside collapsed sidebar */}
+      {isCollapsed && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(false)}
+          className="fixed top-4 left-20 z-50 p-2 bg-card border border-border shadow-lg hover:bg-muted rounded-r-md rounded-l-none"
+          data-testid="sidebar-expand-button"
+          title="Expand Sidebar"
+        >
+          <i className="fas fa-chevron-right"></i>
+        </Button>
+      )}
+      
       <aside 
         ref={sidebarRef}
         className={cn(
-          "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out relative",
+          "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
           isCollapsed ? "w-16" : "w-64"
         )} 
         data-testid="sidebar"
       >
-        {/* Expand button when collapsed */}
-        {isCollapsed && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsCollapsed(false)}
-            className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 p-2 hover:bg-muted"
-            data-testid="sidebar-expand-button"
-            title="Expand Sidebar"
-          >
-            <i className="fas fa-chevron-right"></i>
-          </Button>
-        )}
         <div className={cn(
           "border-b border-border flex items-center justify-between",
-          isCollapsed ? "p-4 pt-16" : "p-6"
+          isCollapsed ? "p-4" : "p-6"
         )}>
           <div className={cn(
             "flex items-center",
