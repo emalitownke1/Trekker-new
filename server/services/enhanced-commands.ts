@@ -495,4 +495,635 @@ commandRegistry.register({
   }
 });
 
+// Additional Group Management Commands (to reach 15 total)
+
+commandRegistry.register({
+  name: 'add',
+  aliases: ['invite-user'],
+  description: 'Add user to group (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from, args } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    if (!args.length) {
+      await respond('❌ Please provide a phone number!\n\n*Example:* .add 254712345678');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can add users!');
+        return;
+      }
+
+      const phoneNumber = args[0].replace(/[^\d]/g, '');
+      const userToAdd = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+      const userJid = userToAdd + '@s.whatsapp.net';
+
+      await client.groupParticipantsUpdate(from, [userJid], 'add');
+      await respond(`✅ Successfully added @${userToAdd} to the group!`);
+
+    } catch (error) {
+      console.error('Error adding user:', error);
+      await respond('❌ Failed to add user. Make sure the number is registered on WhatsApp!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'mute',
+  aliases: ['silence'],
+  description: 'Mute group chat (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from, args } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can mute the group!');
+        return;
+      }
+
+      const duration = args[0] ? parseInt(args[0]) : 24; // Default 24 hours
+      const muteUntil = new Date(Date.now() + duration * 60 * 60 * 1000);
+      
+      await client.groupSettingUpdate(from, 'announcement');
+      await respond(`🔇 Group has been muted for ${duration} hour(s)!\nOnly admins can send messages until ${muteUntil.toLocaleString()}`);
+
+    } catch (error) {
+      console.error('Error muting group:', error);
+      await respond('❌ Failed to mute group! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'unmute',
+  aliases: ['unsilence'],
+  description: 'Unmute group chat (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can unmute the group!');
+        return;
+      }
+
+      await client.groupSettingUpdate(from, 'not_announcement');
+      await respond('🔊 Group has been unmuted! All members can now send messages.');
+
+    } catch (error) {
+      console.error('Error unmuting group:', error);
+      await respond('❌ Failed to unmute group! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'lock',
+  aliases: ['lockgroup'],
+  description: 'Lock group settings (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can lock group settings!');
+        return;
+      }
+
+      await client.groupSettingUpdate(from, 'locked');
+      await respond('🔒 Group settings have been locked! Only admins can edit group info.');
+
+    } catch (error) {
+      console.error('Error locking group:', error);
+      await respond('❌ Failed to lock group! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'unlock',
+  aliases: ['unlockgroup'],
+  description: 'Unlock group settings (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can unlock group settings!');
+        return;
+      }
+
+      await client.groupSettingUpdate(from, 'unlocked');
+      await respond('🔓 Group settings have been unlocked! All members can edit group info.');
+
+    } catch (error) {
+      console.error('Error unlocking group:', error);
+      await respond('❌ Failed to unlock group! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'setname',
+  aliases: ['changename'],
+  description: 'Change group name (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from, args } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    if (!args.length) {
+      await respond('❌ Please provide a new group name!\n\n*Example:* .setname My New Group');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can change group name!');
+        return;
+      }
+
+      const newName = args.join(' ');
+      await client.groupUpdateSubject(from, newName);
+      await respond(`✅ Group name changed to: *${newName}*`);
+
+    } catch (error) {
+      console.error('Error changing group name:', error);
+      await respond('❌ Failed to change group name! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'setdesc',
+  aliases: ['changedesc'],
+  description: 'Change group description (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from, args } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    if (!args.length) {
+      await respond('❌ Please provide a new group description!\n\n*Example:* .setdesc Welcome to our group!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can change group description!');
+        return;
+      }
+
+      const newDesc = args.join(' ');
+      await client.groupUpdateDescription(from, newDesc);
+      await respond(`✅ Group description updated successfully!`);
+
+    } catch (error) {
+      console.error('Error changing group description:', error);
+      await respond('❌ Failed to change group description! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'revoke',
+  aliases: ['resetlink'],
+  description: 'Revoke and regenerate group invite link (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can revoke invite links!');
+        return;
+      }
+
+      await client.groupRevokeInvite(from);
+      const newInviteCode = await client.groupInviteCode(from);
+      const newInviteLink = `https://chat.whatsapp.com/${newInviteCode}`;
+
+      await respond(`🔄 *Group invite link revoked!*\n\n🔗 *New invite link:*\n${newInviteLink}\n\n⚠️ Previous link is no longer valid!`);
+
+    } catch (error) {
+      console.error('Error revoking invite link:', error);
+      await respond('❌ Failed to revoke invite link! Make sure I have admin privileges.');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'hidetag',
+  aliases: ['htag'],
+  description: 'Send message with hidden mentions (Group admin only)',
+  category: 'GROUP',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, from, args } = context;
+
+    if (!from.endsWith('@g.us')) {
+      await respond('❌ This command can only be used in group chats!');
+      return;
+    }
+
+    if (!args.length) {
+      await respond('❌ Please provide a message!\n\n*Example:* .hidetag Hello everyone!');
+      return;
+    }
+
+    try {
+      const groupMetadata = await client.groupMetadata(from);
+      const senderNumber = message.key.participant || message.key.remoteJid;
+
+      const senderIsAdmin = groupMetadata.participants.find((p: any) => p.id === senderNumber)?.admin;
+      if (!senderIsAdmin) {
+        await respond('❌ Only group admins can use hidetag!');
+        return;
+      }
+
+      const messageText = args.join(' ');
+      const participants = groupMetadata.participants.map((p: any) => p.id);
+
+      await client.sendMessage(from, {
+        text: messageText,
+        mentions: participants
+      });
+
+    } catch (error) {
+      console.error('Error sending hidetag:', error);
+      await respond('❌ Failed to send hidetag message!');
+    }
+  }
+});
+
+// User Management Commands
+
+commandRegistry.register({
+  name: 'block',
+  aliases: ['blockuser'],
+  description: 'Block a user (Owner only)',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, args } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    if (!args.length) {
+      const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      if (!quotedUser) {
+        await respond('❌ Please reply to a message or provide a phone number!\n\n*Example:* .block 254712345678');
+        return;
+      }
+      
+      try {
+        await client.updateBlockStatus(quotedUser, 'block');
+        await respond(`🚫 Successfully blocked @${quotedUser.split('@')[0]}!`);
+      } catch (error) {
+        await respond('❌ Failed to block user!');
+      }
+      return;
+    }
+
+    try {
+      const phoneNumber = args[0].replace(/[^\d]/g, '');
+      const userToBlock = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+      const userJid = userToBlock + '@s.whatsapp.net';
+
+      await client.updateBlockStatus(userJid, 'block');
+      await respond(`🚫 Successfully blocked @${userToBlock}!`);
+
+    } catch (error) {
+      console.error('Error blocking user:', error);
+      await respond('❌ Failed to block user!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'unblock',
+  aliases: ['unblockuser'],
+  description: 'Unblock a user (Owner only)',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, args } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    if (!args.length) {
+      await respond('❌ Please provide a phone number!\n\n*Example:* .unblock 254712345678');
+      return;
+    }
+
+    try {
+      const phoneNumber = args[0].replace(/[^\d]/g, '');
+      const userToUnblock = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+      const userJid = userToUnblock + '@s.whatsapp.net';
+
+      await client.updateBlockStatus(userJid, 'unblock');
+      await respond(`✅ Successfully unblocked @${userToUnblock}!`);
+
+    } catch (error) {
+      console.error('Error unblocking user:', error);
+      await respond('❌ Failed to unblock user!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'setprofile',
+  aliases: ['setpfp'],
+  description: 'Change bot profile picture (Owner only)',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    try {
+      // Check if message has an image
+      const messageType = Object.keys(message.message || {})[0];
+      if (messageType !== 'imageMessage') {
+        await respond('❌ Please send an image with this command!\n\n*Usage:* Send an image with caption .setprofile');
+        return;
+      }
+
+      const imageMessage = message.message?.imageMessage;
+      if (!imageMessage) {
+        await respond('❌ No image found in the message!');
+        return;
+      }
+
+      // Download the image
+      const buffer = await client.downloadMediaMessage(message);
+      
+      // Update profile picture
+      await client.updateProfilePicture(client.user!.id, buffer);
+      await respond('✅ Profile picture updated successfully!');
+
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      await respond('❌ Failed to update profile picture!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'setstatus',
+  aliases: ['setbio'],
+  description: 'Change bot status/bio (Owner only)',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, args } = context;
+
+    // Check if sender is bot owner (from own number)
+    if (!message.key.fromMe) {
+      await respond('❌ This command can only be used by the bot owner!');
+      return;
+    }
+
+    if (!args.length) {
+      await respond('❌ Please provide a new status!\n\n*Example:* .setstatus I am TREKKER-MD Bot!');
+      return;
+    }
+
+    try {
+      const newStatus = args.join(' ');
+      await client.updateProfileStatus(newStatus);
+      await respond(`✅ Status updated to: *${newStatus}*`);
+
+    } catch (error) {
+      console.error('Error updating status:', error);
+      await respond('❌ Failed to update status!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'getprofile',
+  aliases: ['profile'],
+  description: 'Get user profile information',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, args } = context;
+
+    try {
+      let targetUser: string;
+      
+      if (args.length > 0) {
+        const phoneNumber = args[0].replace(/[^\d]/g, '');
+        targetUser = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+        targetUser = targetUser + '@s.whatsapp.net';
+      } else {
+        const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quotedUser) {
+          targetUser = quotedUser;
+        } else {
+          targetUser = message.key.participant || message.key.remoteJid || '';
+        }
+      }
+
+      if (!targetUser) {
+        await respond('❌ Could not determine target user!');
+        return;
+      }
+
+      // Get user profile
+      const profilePicUrl = await client.profilePictureUrl(targetUser, 'image').catch(() => null);
+      const status = await client.fetchStatus(targetUser).catch(() => null);
+      
+      const profileInfo = `👤 *User Profile*\n\n` +
+        `📱 *Number:* @${targetUser.split('@')[0]}\n` +
+        `📝 *Status:* ${status?.status || 'No status'}\n` +
+        `📅 *Status Date:* ${status?.setAt ? new Date(status.setAt).toDateString() : 'Unknown'}\n` +
+        `🖼️ *Profile Picture:* ${profilePicUrl ? 'Available' : 'No profile picture'}`;
+
+      if (profilePicUrl) {
+        await client.sendMessage(message.key.remoteJid!, {
+          image: { url: profilePicUrl },
+          caption: profileInfo,
+          mentions: [targetUser]
+        });
+      } else {
+        await respond(profileInfo);
+      }
+
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      await respond('❌ Failed to get user profile!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'online',
+  aliases: ['presence'],
+  description: 'Check if user is online',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, args } = context;
+
+    try {
+      let targetUser: string;
+      
+      if (args.length > 0) {
+        const phoneNumber = args[0].replace(/[^\d]/g, '');
+        targetUser = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+        targetUser = targetUser + '@s.whatsapp.net';
+      } else {
+        const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quotedUser) {
+          targetUser = quotedUser;
+        } else {
+          await respond('❌ Please reply to a message or provide a phone number!\n\n*Example:* .online 254712345678');
+          return;
+        }
+      }
+
+      // Subscribe to presence updates
+      await client.presenceSubscribe(targetUser);
+      
+      // Check current presence
+      const presence = await client.chatModify({ markRead: false }, targetUser);
+      
+      await respond(`👁️ *Presence Status*\n\n📱 *User:* @${targetUser.split('@')[0]}\n🔍 *Checking presence...*\n\n⚠️ *Note:* Presence status depends on user's privacy settings.`);
+
+    } catch (error) {
+      console.error('Error checking presence:', error);
+      await respond('❌ Failed to check user presence!');
+    }
+  }
+});
+
+commandRegistry.register({
+  name: 'dp',
+  aliases: ['getdp'],
+  description: 'Get user profile picture',
+  category: 'USER',
+  handler: async (context: CommandContext) => {
+    const { respond, message, client, args } = context;
+
+    try {
+      let targetUser: string;
+      
+      if (args.length > 0) {
+        const phoneNumber = args[0].replace(/[^\d]/g, '');
+        targetUser = phoneNumber.startsWith('254') ? phoneNumber : '254' + phoneNumber;
+        targetUser = targetUser + '@s.whatsapp.net';
+      } else {
+        const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+        if (quotedUser) {
+          targetUser = quotedUser;
+        } else {
+          targetUser = message.key.participant || message.key.remoteJid || '';
+        }
+      }
+
+      if (!targetUser) {
+        await respond('❌ Could not determine target user!');
+        return;
+      }
+
+      // Get profile picture
+      const profilePicUrl = await client.profilePictureUrl(targetUser, 'image');
+      
+      await client.sendMessage(message.key.remoteJid!, {
+        image: { url: profilePicUrl },
+        caption: `📸 *Profile Picture*\n\n👤 *User:* @${targetUser.split('@')[0]}`,
+        mentions: [targetUser]
+      });
+
+    } catch (error) {
+      console.error('Error getting profile picture:', error);
+      await respond('❌ Failed to get profile picture! User may not have a profile picture or privacy settings prevent access.');
+    }
+  }
+});
+
 console.log('✅ TREKKER-MD essential commands loaded successfully');
