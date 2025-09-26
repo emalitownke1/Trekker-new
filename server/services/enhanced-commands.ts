@@ -240,42 +240,66 @@ commandRegistry.register({
   handler: async (context: CommandContext) => {
     const { respond, message, client, from } = context;
 
+    // Get the actual chat ID (group ID)
+    const chatId = message.key.remoteJid || from;
+    
     // Check if it's a group chat
-    if (!from.endsWith('@g.us')) {
+    if (!chatId || !chatId.endsWith('@g.us')) {
       await respond('❌ This command can only be used in group chats!');
       return;
     }
 
     try {
-      // Get quoted message or tagged user
-      const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      // Get quoted message or tagged user - improved extraction
+      let quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      
+      // Alternative ways to get the user
+      if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
+        quotedUser = message.message.extendedTextMessage.contextInfo.participant;
+      }
+      
+      // Check if user mentioned with @
+      if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+        quotedUser = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+      }
 
       if (!quotedUser) {
-        await respond('❌ Please reply to a message to promote the user!');
+        await respond('❌ Please reply to a message or mention a user to promote!\n\nExample: Reply to their message or use @username');
         return;
       }
 
       // Get group metadata to check admin status
-      const groupMetadata = await client.groupMetadata(from);
+      const groupMetadata = await client.groupMetadata(chatId);
       const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
-      const senderNumber = message.key.participant || message.key.remoteJid;
+      const senderNumber = message.key.participant || message.key.remoteJid || '';
 
-      // Check if sender is admin
+      // Check if sender is admin - improved logic
       const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
-      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
+      const senderIsAdmin = senderParticipant && (senderParticipant.admin === 'admin' || senderParticipant.admin === 'superadmin');
+      
+      if (!senderIsAdmin) {
         await respond('❌ Only group admins can promote users!');
         return;
       }
 
-      // Check if bot is admin
+      // Check if bot is admin - improved logic
       const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
-      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
+      const botIsAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin');
+      
+      if (!botIsAdmin) {
         await respond('❌ Bot needs admin privileges to promote users!');
         return;
       }
 
+      // Check if user is already admin
+      const targetParticipant = groupMetadata.participants.find((p: any) => p.id === quotedUser);
+      if (targetParticipant && (targetParticipant.admin === 'admin' || targetParticipant.admin === 'superadmin')) {
+        await respond(`❌ @${quotedUser.split('@')[0]} is already an admin!`);
+        return;
+      }
+
       // Promote user
-      await client.groupParticipantsUpdate(from, [quotedUser], 'promote');
+      await client.groupParticipantsUpdate(chatId, [quotedUser], 'promote');
       await respond(`✅ Successfully promoted @${quotedUser.split('@')[0]} to admin!`);
 
     } catch (error) {
@@ -293,36 +317,61 @@ commandRegistry.register({
   handler: async (context: CommandContext) => {
     const { respond, message, client, from } = context;
 
-    if (!from.endsWith('@g.us')) {
+    // Get the actual chat ID (group ID)
+    const chatId = message.key.remoteJid || from;
+    
+    if (!chatId || !chatId.endsWith('@g.us')) {
       await respond('❌ This command can only be used in group chats!');
       return;
     }
 
     try {
-      const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      // Get quoted message or tagged user - improved extraction
+      let quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      
+      if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
+        quotedUser = message.message.extendedTextMessage.contextInfo.participant;
+      }
+      
+      if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+        quotedUser = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+      }
 
       if (!quotedUser) {
-        await respond('❌ Please reply to a message to demote the user!');
+        await respond('❌ Please reply to a message or mention a user to demote!\n\nExample: Reply to their message or use @username');
         return;
       }
 
-      const groupMetadata = await client.groupMetadata(from);
+      const groupMetadata = await client.groupMetadata(chatId);
       const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
-      const senderNumber = message.key.participant || message.key.remoteJid;
+      const senderNumber = message.key.participant || message.key.remoteJid || '';
 
+      // Check if sender is admin - improved logic
       const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
-      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
+      const senderIsAdmin = senderParticipant && (senderParticipant.admin === 'admin' || senderParticipant.admin === 'superadmin');
+      
+      if (!senderIsAdmin) {
         await respond('❌ Only group admins can demote users!');
         return;
       }
 
+      // Check if bot is admin - improved logic
       const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
-      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
+      const botIsAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin');
+      
+      if (!botIsAdmin) {
         await respond('❌ Bot needs admin privileges to demote users!');
         return;
       }
 
-      await client.groupParticipantsUpdate(from, [quotedUser], 'demote');
+      // Check if user is actually an admin
+      const targetParticipant = groupMetadata.participants.find((p: any) => p.id === quotedUser);
+      if (!targetParticipant || (targetParticipant.admin !== 'admin' && targetParticipant.admin !== 'superadmin')) {
+        await respond(`❌ @${quotedUser.split('@')[0]} is not an admin!`);
+        return;
+      }
+
+      await client.groupParticipantsUpdate(chatId, [quotedUser], 'demote');
       await respond(`✅ Successfully demoted @${quotedUser.split('@')[0]} from admin!`);
 
     } catch (error) {
@@ -340,36 +389,67 @@ commandRegistry.register({
   handler: async (context: CommandContext) => {
     const { respond, message, client, from } = context;
 
-    if (!from.endsWith('@g.us')) {
+    // Get the actual chat ID (group ID)
+    const chatId = message.key.remoteJid || from;
+    
+    if (!chatId || !chatId.endsWith('@g.us')) {
       await respond('❌ This command can only be used in group chats!');
       return;
     }
 
     try {
-      const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      // Get quoted message or tagged user - improved extraction
+      let quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+      
+      if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
+        quotedUser = message.message.extendedTextMessage.contextInfo.participant;
+      }
+      
+      if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+        quotedUser = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+      }
 
       if (!quotedUser) {
-        await respond('❌ Please reply to a message to remove the user!');
+        await respond('❌ Please reply to a message or mention a user to remove!\n\nExample: Reply to their message or use @username');
         return;
       }
 
-      const groupMetadata = await client.groupMetadata(from);
+      const groupMetadata = await client.groupMetadata(chatId);
       const botNumber = client.user?.id?.replace(/:\d+/, '') + '@s.whatsapp.net';
-      const senderNumber = message.key.participant || message.key.remoteJid;
+      const senderNumber = message.key.participant || message.key.remoteJid || '';
 
+      // Check if sender is admin - improved logic
       const senderParticipant = groupMetadata.participants.find((p: any) => p.id === senderNumber);
-      if (!senderParticipant || (!senderParticipant.admin && senderParticipant.admin !== 'admin' && senderParticipant.admin !== 'superadmin')) {
+      const senderIsAdmin = senderParticipant && (senderParticipant.admin === 'admin' || senderParticipant.admin === 'superadmin');
+      
+      if (!senderIsAdmin) {
         await respond('❌ Only group admins can remove users!');
         return;
       }
 
+      // Check if bot is admin - improved logic
       const botParticipant = groupMetadata.participants.find((p: any) => p.id === botNumber);
-      if (!botParticipant || (!botParticipant.admin && botParticipant.admin !== 'admin' && botParticipant.admin !== 'superadmin')) {
+      const botIsAdmin = botParticipant && (botParticipant.admin === 'admin' || botParticipant.admin === 'superadmin');
+      
+      if (!botIsAdmin) {
         await respond('❌ Bot needs admin privileges to remove users!');
         return;
       }
 
-      await client.groupParticipantsUpdate(from, [quotedUser], 'remove');
+      // Check if trying to remove bot itself
+      if (quotedUser === botNumber) {
+        await respond('❌ I cannot remove myself from the group!');
+        return;
+      }
+
+      // Check if user is in the group
+      const targetParticipant = groupMetadata.participants.find((p: any) => p.id === quotedUser);
+      if (!targetParticipant) {
+        await respond(`❌ @${quotedUser.split('@')[0]} is not in this group!`);
+        return;
+      }
+
+      await client.groupParticipantsUpdate(chatId, [quotedUser], 'remove');
       await respond(`✅ Successfully removed @${quotedUser.split('@')[0]} from the group!`);
 
     } catch (error) {
@@ -860,18 +940,29 @@ commandRegistry.register({
 
     try {
       let userToBlock: string;
+      const chatId = message.key.remoteJid || from;
 
       // If no arguments provided
       if (!args.length) {
         // Check if it's a reply to a message (in group or private)
-        const quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+        let quotedUser = message.message?.extendedTextMessage?.contextInfo?.participant;
+        
+        // Alternative ways to get the user
+        if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
+          quotedUser = message.message.extendedTextMessage.contextInfo.participant;
+        }
+        
+        if (!quotedUser && message.message?.extendedTextMessage?.contextInfo?.mentionedJid?.length > 0) {
+          quotedUser = message.message.extendedTextMessage.contextInfo.mentionedJid[0];
+        }
+
         if (quotedUser) {
           userToBlock = quotedUser;
-        } else if (from.endsWith('@s.whatsapp.net')) {
+        } else if (chatId && chatId.endsWith('@s.whatsapp.net')) {
           // If it's a private chat, block the chat itself
-          userToBlock = from;
+          userToBlock = chatId;
         } else {
-          await respond('❌ Please reply to a message, provide a phone number, or use this command in a private chat!\n\n*Example:* .block 254712345678');
+          await respond('❌ Please reply to a message, mention a user, provide a phone number, or use this command in a private chat!\n\n*Example:* .block 254712345678');
           return;
         }
       } else {
