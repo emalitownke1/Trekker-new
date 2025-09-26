@@ -3,6 +3,10 @@ FROM node:20-alpine
 
 # Install system dependencies for puppeteer and other native modules
 RUN apk add --no-cache \
+    git \
+    python3 \
+    make \
+    g++ \
     chromium \
     nss \
     freetype \
