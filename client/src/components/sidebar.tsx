@@ -69,12 +69,12 @@ export default function Sidebar() {
       >
         <i className={`fas ${isCollapsed ? 'fa-bars' : 'fa-times'} text-lg`}></i>
       </Button>
-      
+
       <aside 
         ref={sidebarRef}
         className={cn(
           "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out fixed left-0 top-0 h-full z-[9998]",
-          isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-64 opacity-100"
+          isCollapsed ? "w-0 opacity-0 pointer-events-none -translate-x-full overflow-hidden" : "w-64 opacity-100 translate-x-0"
         )} 
         data-testid="sidebar"
       >
@@ -108,7 +108,7 @@ export default function Sidebar() {
             </Button>
           )}
         </div>
-      
+
       <nav className="flex-1 p-4 space-y-2">
         {/* Show different navigation items based on user role */}
         {(isAdmin ? adminNavigationItems : guestNavigationItems).map((item) => (
@@ -129,7 +129,7 @@ export default function Sidebar() {
             </div>
           </Link>
         ))}
-        
+
         {/* Guest Bot Management */}
         {!isAdmin && !isCollapsed && (
           <>
@@ -143,8 +143,8 @@ export default function Sidebar() {
           </>
         )}
 
-        
-        
+
+
         {/* Admin Console navigation */}
         {isAdmin && (
           <>
@@ -177,7 +177,7 @@ export default function Sidebar() {
           </>
         )}
       </nav>
-      
+
       <div className="p-4 border-t border-border">
         {isAuthenticated ? (
           <div className={cn(
@@ -213,7 +213,7 @@ export default function Sidebar() {
           </Button>
         )}
       </div>
-      
+
       <LoginModal 
         isOpen={showLoginModal} 
         onClose={() => setShowLoginModal(false)}
@@ -222,12 +222,12 @@ export default function Sidebar() {
           setShowLoginModal(false);
         }} 
       />
-      
+
       <ValidateCredentialsModal 
         isOpen={showValidateModal} 
         onClose={() => setShowValidateModal(false)}
       />
-      
+
       <GuestBotRegistration 
         open={showGuestRegistration} 
         onClose={() => setShowGuestRegistration(false)} 
