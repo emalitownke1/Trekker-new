@@ -201,24 +201,35 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
     onSuccess: (data) => {
       if (data.type === 'existing_bot_found') {
         setExistingBotData(data.botDetails);
-        setStep(8); // FIXED: Show existing bot management (step 8, not 4)
+        setStep(8); // Show existing bot management
         toast({
           title: "Existing Bot Found",
           description: data.message || "Welcome back! You have a bot on this server."
         });
       } else if (data.type === 'cross_tenancy_registered') {
         setCrossTenancyData(data);
-        setStep(11); // FIXED: Show cross-tenancy registration success (step 11, not 7)
+        setStep(11); // Show cross-tenancy registration success
         toast({
           title: "Auto-Distributed to Available Server",
           description: data.message || "Your bot has been registered on an available server!"
         });
       } else {
-        setStep(7); // FIXED: New registration success (step 7, not 3)
-        toast({
-          title: "Bot registration submitted",
-          description: data.message || "Your bot is being validated..."
-        });
+        // Check if bot was auto-approved (offer active)
+        const isAutoApproved = data.botDetails?.approvalStatus === 'approved';
+        
+        setStep(7); // Show registration success
+        
+        if (isAutoApproved) {
+          toast({
+            title: "🎉 Bot Auto-Approved!",
+            description: "Congratulations! Your bot has been automatically approved and will be activated shortly."
+          });
+        } else {
+          toast({
+            title: "Bot registration submitted",
+            description: data.message || "Your bot is being validated and awaiting approval..."
+          });
+        }
       }
     },
     onError: (error: any) => {
@@ -962,62 +973,89 @@ export default function GuestBotRegistration({ open, onClose }: GuestBotRegistra
           <div className="space-y-6 pb-4">
             <div className="text-center p-8 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
               <div className="flex items-center justify-center mb-4">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-2xl">
-                  ✅
+                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center text-white text-2xl animate-bounce">
+                  🎉
                 </div>
               </div>
-              <h3 className="text-xl font-bold mb-2 text-green-700 dark:text-green-400">Bot Registered Successfully!</h3>
-              <p className="text-sm text-muted-foreground mb-4">Your bot credentials have been validated and registered</p>
+              <h3 className="text-xl font-bold mb-2 text-green-700 dark:text-green-400">Congratulations! You have successfully claimed your bot!</h3>
+              <div className="bg-white/80 dark:bg-green-800/30 rounded-lg p-4 mt-4">
+                <div className="text-lg font-bold text-green-600 dark:text-green-300 mb-2">🎁 Special Offer Active!</div>
+                <p className="text-sm text-green-700 dark:text-green-200">Your bot will be auto-approved - don't contact admin!</p>
+              </div>
             </div>
 
-            <Card className="border-l-4 border-l-green-500">
+            <Card className="border-l-4 border-l-green-500 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
               <CardHeader>
-                <CardTitle className="text-lg">🎉 Next Steps</CardTitle>
-                <CardDescription>Your bot is now awaiting admin approval</CardDescription>
+                <CardTitle className="text-lg text-green-700 dark:text-green-300">🚀 Your Bot is Ready!</CardTitle>
+                <CardDescription className="text-green-600 dark:text-green-400">Auto-approval is in progress</CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2 text-sm mb-4">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5">✅</span>
-                    Your bot is now dormant and awaiting approval
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">💳</span>
-                    Pay KSh 100 to instantly approve and activate your bot
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-purple-500 mt-0.5">⚡</span>
-                    M-Pesa payment - fast and secure activation
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-orange-500 mt-0.5">🚀</span>
-                    Once approved, enjoy all premium TREKKER-MD features!
-                  </li>
-                </ul>
-                
-                <Button 
-                  onClick={() => {
-                    setPendingApprovalBot({ 
-                      phoneNumber: formData.phoneNumber,
-                      botName: formData.botName,
-                      botId: 'pending'
-                    });
-                    setShowStkPushPayment(true);
-                  }}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-lg mb-3"
-                  data-testid="button-approve-bot-payment"
-                >
-                  💳 Pay KSh 100 & Approve Bot Now
-                </Button>
-                
-                <p className="text-xs text-center text-muted-foreground">
-                  Or wait for manual approval (may take longer)
-                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div className="bg-white/50 dark:bg-green-800/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-green-500">✅</span>
+                      <span className="font-medium text-sm">Registration Complete</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Bot successfully registered and validated</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-green-800/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-blue-500">🤖</span>
+                      <span className="font-medium text-sm">Auto-Approval Active</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Your bot will be approved automatically</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-green-800/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-purple-500">⚡</span>
+                      <span className="font-medium text-sm">No Admin Contact Needed</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Special offer - instant activation</p>
+                  </div>
+                  <div className="bg-white/50 dark:bg-green-800/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-orange-500">🎁</span>
+                      <span className="font-medium text-sm">Free Trial Period</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Enjoy all premium features</p>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+                  <h4 className="font-semibold text-blue-700 dark:text-blue-300 mb-2">🎯 What's Next?</h4>
+                  <ul className="space-y-1 text-sm text-blue-600 dark:text-blue-400">
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      Your bot will automatically start within a few minutes
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      You'll receive a WhatsApp confirmation message
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                      All premium TREKKER-MD features are now available
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="text-center">
+                  <div className="text-lg font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+                    🌟 Welcome to TREKKER-MD Lifetime Bot! 🌟
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Thank you for choosing our premium WhatsApp automation platform
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
-            <Button onClick={handleClose} className="w-full" data-testid="button-close-success">
-              Done
+            <Button 
+              onClick={handleClose} 
+              className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold py-3 text-lg" 
+              data-testid="button-close-success"
+            >
+              🚀 Awesome! Let's Go
             </Button>
           </div>
         )}
