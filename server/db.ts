@@ -196,9 +196,9 @@ export async function initializeDatabase() {
       console.log('🔧 Running database migrations...');
 
       // Add description column to offer_management table if it doesn't exist
-      await db.execute(sql`
+      await client`
         ALTER TABLE offer_management ADD COLUMN IF NOT EXISTS description TEXT;
-      `);
+      `;
 
       console.log('✅ Database migrations completed');
     } catch (migrationError) {
