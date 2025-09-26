@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { LoginModal } from "./login-modal";
 import { ValidateCredentialsModal } from "./validate-credentials-modal";
 import { Button } from "./ui/button";
@@ -39,13 +39,32 @@ export default function Sidebar() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showValidateModal, setShowValidateModal] = useState(false);
   const [showGuestRegistration, setShowGuestRegistration] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+
+  // Handle click outside to collapse sidebar
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node) && !isCollapsed) {
+        setIsCollapsed(true);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isCollapsed]);
 
   return (
-    <aside className={cn(
-      "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
-      isCollapsed ? "w-16" : "w-64"
-    )} data-testid="sidebar">
+    <aside 
+      ref={sidebarRef}
+      className={cn(
+        "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out",
+        isCollapsed ? "w-16" : "w-64"
+      )} 
+      data-testid="sidebar"
+    >
       <div className={cn(
         "border-b border-border flex items-center justify-between",
         isCollapsed ? "p-4" : "p-6"
