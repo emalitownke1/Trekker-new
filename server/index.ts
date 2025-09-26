@@ -125,6 +125,10 @@ app.use((req, res, next) => {
   // Initialize database (create tables if they don't exist)
   await initializeDatabase();
   
+  // Initialize offer system
+  const { offerManager } = await import('./services/offer-manager');
+  await offerManager.initializeOfferSystem();
+  
   // Start scheduled bot monitoring immediately after database initialization
   console.log('🚀 Bootstrap: Starting scheduled monitoring system...');
   await startMonitoringOnce();
@@ -156,8 +160,13 @@ app.use((req, res, next) => {
   });
 
   // Graceful shutdown handling for containerized environments
-  const gracefulShutdown = (signal: string) => {
+  const gracefulShutdown = async (signal: string) => {
     log(`${signal} received, shutting down gracefully`);
+    
+    // Cleanup offer manager
+    const { offerManager } = await import('./services/offer-manager');
+    offerManager.cleanup();
+    
     server.close((err) => {
       if (err) {
         log(`Error during server shutdown: ${err.message}`);

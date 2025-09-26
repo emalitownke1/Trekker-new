@@ -107,6 +107,12 @@ export default function Dashboard() {
     enabled: isAdmin
   });
 
+  // Fetch current offer information (available to all users)
+  const { data: offerInfo, isLoading: offerLoading } = useQuery({
+    queryKey: ["/api/offer/current"],
+    refetchInterval: 60000, // Refresh every minute to update countdown
+  });
+
   // Fetch God registry for admin
   const { data: godRegistry = [] as GodRegistryEntry[], isLoading: registryLoading } = useQuery<GodRegistryEntry[]>({
     queryKey: ["/api/admin/god-registry"],
@@ -384,6 +390,46 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Active Offer Banner */}
+        {!offerLoading && offerInfo?.isActive && (
+          <Card className="bg-gradient-to-r from-green-600 to-emerald-600 border-none mb-6 text-white">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold mb-2">🎁 SPECIAL OFFER ACTIVE!</h3>
+                <p className="text-green-100 mb-4">{offerInfo.offer?.name} - Limited Time Only!</p>
+                
+                {offerInfo.timeRemaining && (
+                  <div className="grid grid-cols-4 gap-4 mb-4">
+                    <div className="bg-white/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.days}</div>
+                      <div className="text-sm text-green-100">Days</div>
+                    </div>
+                    <div className="bg-white/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.hours}</div>
+                      <div className="text-sm text-green-100">Hours</div>
+                    </div>
+                    <div className="bg-white/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.minutes}</div>
+                      <div className="text-sm text-green-100">Minutes</div>
+                    </div>
+                    <div className="bg-white/20 rounded-lg p-3">
+                      <div className="text-2xl font-bold">{offerInfo.timeRemaining.seconds}</div>
+                      <div className="text-sm text-green-100">Seconds</div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="bg-white/10 rounded-lg p-4">
+                  <p className="font-semibold text-lg">🚀 Register now and get instant approval!</p>
+                  <p className="text-sm text-green-100 mt-1">
+                    All bots registered during this offer period will be automatically approved for {offerInfo.offer?.durationMonths} month{offerInfo.offer?.durationMonths !== 1 ? 's' : ''}!
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* TREKKER-MD Welcome & Contact */}
         <Card className="bg-gradient-to-r from-blue-600 to-purple-600 border-none mb-8 text-white">

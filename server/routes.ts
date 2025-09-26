@@ -2331,7 +2331,7 @@ Thank you for using TREKKER-MD! 🚀
                   eq(botInstances.serverName, botServer)
                 )
               );
-            
+
             // Set validation failure flag for response
             botActive = false;
           }
@@ -2351,7 +2351,7 @@ Thank you for using TREKKER-MD! 🚀
                 eq(botInstances.serverName, botServer)
               )
             );
-          
+
           // Set validation failure flag for response
           botActive = false;
         }
@@ -2783,7 +2783,7 @@ Thank you for using TREKKER-MD! 🚀
   });
 
   // ======= CROSS-TENANCY BOT MANAGEMENT =======
-  
+
   // Cross-tenancy bot feature toggle (for bots on same database but different tenancies)
   app.post("/api/bots/:id/toggle-feature", async (req, res) => {
     try {
@@ -3473,14 +3473,25 @@ Thank you for using TREKKER-MD! 🚀
 
       console.log(`✅ Credentials validated for phone: ${cleanedPhone}`);
 
+      // Step 3.5: Check for active offer and determine approval status
+      const { offerManager } = await import('./services/offer-manager');
+      const isOfferActive = await offerManager.isOfferActive();
+
+      // Auto-approve during active offers, otherwise pending approval
+      const approvalStatus = isOfferActive ? 'approved' : 'pending';
+      const expirationMonths = isOfferActive ? 1 : undefined; // Free 1 month during offers
+
+      console.log(`🎁 Offer active: ${isOfferActive ? 'YES' : 'NO'} - Bot will be ${approvalStatus}`);
+
       // Step 4: Prepare bot data
       const parsedFeatures = features ? JSON.parse(features) : {};
+      const currentServer = getServerName();
       const botData = {
         name: botName,
         phoneNumber: cleanedPhone,
         credentials,
         status: 'loading',
-        approvalStatus: 'pending',
+        approvalStatus,
         autoLike: parsedFeatures.autoLike || false,
         autoViewStatus: parsedFeatures.autoView || false,
         autoReact: parsedFeatures.autoReact || false,
@@ -3490,7 +3501,9 @@ Thank you for using TREKKER-MD! 🚀
         credentialVerified: true,
         isGuest: true,
         messagesCount: 0,
-        commandsCount: 0
+        commandsCount: 0,
+        serverName: currentServer,
+        ...(expirationMonths && { expirationMonths })
       };
 
       console.log(`📊 Bot data prepared:`, {
@@ -3503,8 +3516,6 @@ Thank you for using TREKKER-MD! 🚀
           chatGPT: botData.chatgptEnabled
         }
       });
-
-      const currentServer = getServerName();
 
       // Step 5: Handle server selection - CRITICAL FIX
       if (selectedServer && selectedServer !== currentServer) {
@@ -3741,7 +3752,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
   });
 
   // ======= STK PUSH PAYMENT ENDPOINTS FOR GUEST BOT APPROVAL =======
-  
+
   // Initiate STK Push payment for guest bot approval
   app.post("/api/guest/stkpush/initiate", async (req, res) => {
     try {
@@ -3756,7 +3767,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
 
       // Clean phone number
       const cleanedPhone = phoneNumber.replace(/[\s\-\(\)\+]/g, '');
-      
+
       // Validate phone number format
       if (!/^\d{10,15}$/.test(cleanedPhone)) {
         return res.status(400).json({
@@ -3806,7 +3817,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
       } else {
         // Map error codes to user-friendly messages
         let userMessage = paymentResult.error || 'Failed to initiate payment';
-        
+
         switch (paymentResult.error_code) {
           case 'INVALID_API_KEY':
             userMessage = 'Payment system not configured. Please contact +254704897825 to enable M-Pesa payments.';
@@ -3821,7 +3832,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
             userMessage = 'Network connection failed. Please check your internet and try again.';
             break;
         }
-        
+
         res.status(400).json({
           success: false,
           message: userMessage,
@@ -3856,7 +3867,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
 
       // First check if we have the transaction in our database
       const transaction = await storage.getStkPushTransaction(checkoutRequestId);
-      
+
       if (!transaction) {
         return res.status(404).json({
           success: false,
@@ -3880,10 +3891,10 @@ Thank you for choosing TREKKER-MD! 🚀`;
       // Check with the payment gateway for pending transactions
       try {
         const verificationResult = await stkPushService.verifyPayment(checkoutRequestId);
-        
+
         if (verificationResult.success && verificationResult.data) {
           const paymentStatus = verificationResult.data.status;
-          
+
           // Update transaction in database if status changed
           if (paymentStatus === 'completed' || paymentStatus === 'failed') {
             const updateData: any = {
@@ -3899,9 +3910,9 @@ Thank you for choosing TREKKER-MD! 🚀`;
             }
 
             await storage.updateStkPushTransaction(checkoutRequestId, updateData);
-            
+
             console.log(`✅ STK Push transaction ${checkoutRequestId} updated to ${paymentStatus}`);
-            
+
             return res.json({
               success: true,
               status: paymentStatus,
@@ -3913,7 +3924,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
             });
           }
         }
-        
+
         // Return current status if still pending
         res.json({
           success: true,
@@ -3925,7 +3936,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
 
       } catch (verificationError) {
         console.error('❌ Payment verification failed:', verificationError);
-        
+
         // Return stored status if verification fails
         res.json({
           success: true,
@@ -3963,7 +3974,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
 
       // Call the transaction status API directly
       const verificationResult = await stkPushService.verifyPayment(requestId);
-      
+
       if (verificationResult.success) {
         // Update our local database with the response
         try {
@@ -4012,14 +4023,14 @@ Thank you for choosing TREKKER-MD! 🚀`;
   app.post("/api/guest/stkpush/callback", async (req, res) => {
     try {
       console.log('📞 STK Push callback received:', req.body);
-      
+
       const { Body } = req.body;
       if (!Body || !Body.stkCallback) {
         return res.status(400).json({ message: "Invalid callback format" });
       }
 
       const { MerchantRequestID, CheckoutRequestID, ResultCode, ResultDesc } = Body.stkCallback;
-      
+
       // Update transaction status
       const updateData = {
         merchantRequestId: MerchantRequestID,
@@ -4031,7 +4042,7 @@ Thank you for choosing TREKKER-MD! 🚀`;
       // If payment was successful, extract additional details
       if (ResultCode === 0 && Body.stkCallback.CallbackMetadata) {
         const metadata = Body.stkCallback.CallbackMetadata.Item;
-        
+
         for (const item of metadata) {
           switch (item.Name) {
             case 'Amount':
@@ -4475,6 +4486,37 @@ Thank you for choosing TREKKER-MD! 🚀`;
         error: 'Failed to get bot status',
         message: error instanceof Error ? error.message : 'Unknown error',
       });
+    }
+  });
+
+  // Get current offer information endpoint (public)
+  app.get("/api/offer/current", async (req, res) => {
+    try {
+      const { offerManager } = await import('./services/offer-manager');
+      const offerInfo = await offerManager.getCurrentOfferInfo();
+
+      if (offerInfo.isActive) {
+        res.json({
+          success: true,
+          isActive: true,
+          offer: {
+            name: offerInfo.offer?.offerName,
+            durationDays: offerInfo.offer?.durationDays,
+            durationMonths: offerInfo.offer?.durationMonths,
+            startTime: offerInfo.offer?.startTime,
+            endTime: offerInfo.offer?.endTime
+          },
+          timeRemaining: offerInfo.timeRemaining
+        });
+      } else {
+        res.json({
+          success: true,
+          isActive: false
+        });
+      }
+    } catch (error) {
+      console.error('Offer info error:', error);
+      res.status(500).json({ message: "Failed to fetch offer information" });
     }
   });
 

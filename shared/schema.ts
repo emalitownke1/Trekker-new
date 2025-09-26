@@ -136,6 +136,21 @@ export const externalBotConnections = pgTable("external_bot_connections", {
   updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
+// Offer Management table - stores active offers and their countdown state
+export const offerManagement = pgTable("offer_management", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  offerName: text("offer_name").notNull().default("Special Offer"),
+  isActive: boolean("is_active").default(false),
+  offerConfig: text("offer_config"), // Original OFFER env var value (e.g., "12d 2m")
+  durationDays: integer("duration_days").default(0),
+  durationMonths: integer("duration_months").default(0),
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+  serverName: text("server_name").notNull(), // isolate by server instance
+  createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
 // STK Push Transactions table
 export const stkPushTransactions = pgTable("stk_push_transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -165,6 +180,13 @@ export const botInstancesRelations = relations(botInstances, ({ many }) => ({
   groups: many(groups),
   viewedStatusIds: many(viewedStatusIds),
   stkPushTransactions: many(stkPushTransactions),
+}));
+
+export const offerManagementRelations = relations(offerManagement, ({ one }) => ({
+  server: one(serverRegistry, {
+    fields: [offerManagement.serverName],
+    references: [serverRegistry.serverName],
+  }),
 }));
 
 export const commandsRelations = relations(commands, ({ one }) => ({
@@ -272,6 +294,12 @@ export const insertStkPushTransactionSchema = createInsertSchema(stkPushTransact
   updatedAt: true,
 });
 
+export const insertOfferManagementSchema = createInsertSchema(offerManagement).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -302,3 +330,6 @@ export type InsertExternalBotConnection = z.infer<typeof insertExternalBotConnec
 
 export type StkPushTransaction = typeof stkPushTransactions.$inferSelect;
 export type InsertStkPushTransaction = z.infer<typeof insertStkPushTransactionSchema>;
+
+export type OfferManagement = typeof offerManagement.$inferSelect;
+export type InsertOfferManagement = z.infer<typeof insertOfferManagementSchema>;

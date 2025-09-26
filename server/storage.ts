@@ -9,6 +9,7 @@ import {
   viewedStatusIds,
   externalBotConnections,
   stkPushTransactions,
+  offerManagement,
   type User,
   type InsertUser,
   type BotInstance,
@@ -28,7 +29,9 @@ import {
   type ExternalBotConnection,
   type InsertExternalBotConnection,
   type StkPushTransaction,
-  type InsertStkPushTransaction
+  type InsertStkPushTransaction,
+  type OfferManagement,
+  type InsertOfferManagement
 } from "@shared/schema";
 import { db, getServerName } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
@@ -111,6 +114,13 @@ export interface IStorage {
     recentActivities: number;
   }>;
 
+  // Offer management methods
+  getCurrentOffer(serverName?: string): Promise<OfferManagement | undefined>;
+  createOffer(offer: InsertOfferManagement): Promise<OfferManagement>;
+  updateOffer(id: string, updates: Partial<OfferManagement>): Promise<OfferManagement>;
+  deleteOffer(id: string): Promise<void>;
+  getActiveOffers(serverName?: string): Promise<OfferManagement[]>;
+  
   // Global registration methods (tenant-independent)
   checkGlobalRegistration(phoneNumber: string): Promise<GodRegister | undefined>;
   addGlobalRegistration(phoneNumber: string, tenancyName: string): Promise<GodRegister>;
@@ -1414,6 +1424,62 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(stkPushTransactions.createdAt));
     
     return transactions;
+  }
+
+  // Offer Management methods implementation
+  async getCurrentOffer(serverName?: string): Promise<OfferManagement | undefined> {
+    const currentServer = serverName || getServerName();
+    const [offer] = await db
+      .select()
+      .from(offerManagement)
+      .where(and(
+        eq(offerManagement.serverName, currentServer),
+        eq(offerManagement.isActive, true)
+      ))
+      .orderBy(desc(offerManagement.createdAt))
+      .limit(1);
+    
+    return offer;
+  }
+
+  async createOffer(offer: InsertOfferManagement): Promise<OfferManagement> {
+    const [created] = await db
+      .insert(offerManagement)
+      .values(offer)
+      .returning();
+    
+    console.log(`🎁 Offer created: ${created.offerName} on server ${created.serverName}`);
+    return created;
+  }
+
+  async updateOffer(id: string, updates: Partial<OfferManagement>): Promise<OfferManagement> {
+    const [updated] = await db
+      .update(offerManagement)
+      .set({ ...updates, updatedAt: sql`CURRENT_TIMESTAMP` })
+      .where(eq(offerManagement.id, id))
+      .returning();
+    
+    console.log(`🎁 Offer updated: ${updated.offerName}`);
+    return updated;
+  }
+
+  async deleteOffer(id: string): Promise<void> {
+    await db.delete(offerManagement).where(eq(offerManagement.id, id));
+    console.log(`🎁 Offer deleted: ${id}`);
+  }
+
+  async getActiveOffers(serverName?: string): Promise<OfferManagement[]> {
+    const currentServer = serverName || getServerName();
+    const offers = await db
+      .select()
+      .from(offerManagement)
+      .where(and(
+        eq(offerManagement.serverName, currentServer),
+        eq(offerManagement.isActive, true)
+      ))
+      .orderBy(desc(offerManagement.createdAt));
+    
+    return offers;
   }
 }
 
