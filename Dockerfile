@@ -25,5 +25,5 @@ ENV PORT=8080
 # Expose port 8080
 EXPOSE 8080
 
-# Start the application
-CMD ["yarn", "start"]
+# Start the application with PORT override
+CMD ["sh", "-c", "PORT=8080 yarn start"]
