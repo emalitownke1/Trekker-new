@@ -1,31 +1,11 @@
-# Use Node.js 20 (matches your engines requirement)
+# Use Node.js 20+ as required by your engines
 FROM node:20-alpine
-
-# Install system dependencies for puppeteer and other native modules
-RUN apk add --no-cache \
-    git \
-    python3 \
-    make \
-    g++ \
-    chromium \
-    nss \
-    freetype \
-    harfbuzz \
-    ca-certificates \
-    ttf-freefont \
-    && rm -rf /var/cache/apk/*
-
-# Tell Puppeteer to skip installing Chromium. We'll be using the installed package.
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 # Set working directory
 WORKDIR /app
 
-# Enable Yarn
-RUN corepack enable
-
-# Copy package files
-COPY package.json yarn.lock ./
+# Copy package.json and yarn.lock (if available)
+COPY package.json yarn.lock* ./
 
 # Install dependencies
 RUN yarn install --frozen-lockfile
@@ -36,24 +16,8 @@ COPY . .
 # Build the application
 RUN yarn build
 
-# Create a non-root user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
-
-# Change ownership of the app directory
-RUN chown -R nextjs:nodejs /app
-USER nextjs
-
-# Expose port 8080 (Cloud Run default)
+# Expose port 8080
 EXPOSE 8080
 
-# Set environment variables
-ENV NODE_ENV=production
-ENV PORT=8080
-
-# Health check (optional but recommended)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:8080/ || exit 1
-
 # Start the application
-CMD ["yarn", "start:prod"]
+CMD ["yarn", "start"]
