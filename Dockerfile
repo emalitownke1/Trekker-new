@@ -19,6 +19,9 @@ COPY . .
 # Build the application
 RUN yarn build
 
+# Set PORT environment variable for Cloud Run
+ENV PORT=8080
+
 # Expose port 8080
 EXPOSE 8080
 
