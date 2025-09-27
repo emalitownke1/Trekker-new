@@ -6,7 +6,7 @@ expertMode = true
 channel = "stable-25_05"
 
 [workflows]
-runButton = "Build and Start"
+runButton = "Project"
 
 [[workflows.workflow]]
 name = "Project"
@@ -26,7 +26,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "NODE_ENV=production BASE_PATH=/default/server1/rest-service/v1.0 yarn tsx server/index.ts"
+args = "npm run dev"
 waitForPort = 5000
 
 [[workflows.workflow]]
