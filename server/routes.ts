@@ -4180,13 +4180,8 @@ Thank you for choosing TREKKER-MD! 🚀`;
     });
   });
 
-  app.get('/', (req, res) => {
-    res.status(200).json({ 
-      message: 'Server is running',
-      server: getServerName(),
-      timestamp: new Date().toISOString()
-    });
-  });
+  // Root path is handled by Vite middleware for frontend serving
+  // Removed the JSON response route to allow frontend to be served
 
   // Zod schemas for validation
   const botCreateSchema = z.object({

@@ -1,0 +1,152 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trekkermd-whatsapp-bot
+  labels:
+    app: trekkermd-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trekkermd-bot
+  template:
+    metadata:
+      labels:
+        app: trekkermd-bot
+    spec:
+      containers:
+      - name: whatsapp-bot
+        image: trekkermd-bot:latest
+        ports:
+        - containerPort: 8080
+        
+        # Resource limits: 0.5 CPU cores and 1GB memory
+        resources:
+          limits:
+            cpu: 500m      # 0.5 CPU cores
+            memory: 1Gi    # 1GB memory
+          requests:
+            cpu: 250m      # Reserve 0.25 CPU cores
+            memory: 512Mi  # Reserve 512MB memory
+        
+        # Environment variables for optimization
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "8080"
+        - name: NODE_OPTIONS
+          value: "--max-old-space-size=768 --optimize-for-size --gc-interval=100"
+        - name: UV_THREADPOOL_SIZE
+          value: "4"
+        
+        # Health check configuration
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Volume mounts for persistent data
+        volumeMounts:
+        - name: bot-data
+          mountPath: /app/data
+        - name: bot-auth
+          mountPath: /app/auth
+        - name: bot-icons
+          mountPath: /app/icons
+      
+      # Security context
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+      
+      # Volumes for persistent storage
+      volumes:
+      - name: bot-data
+        persistentVolumeClaim:
+          claimName: bot-data-pvc
+      - name: bot-auth
+        persistentVolumeClaim:
+          claimName: bot-auth-pvc
+      - name: bot-icons
+        persistentVolumeClaim:
+          claimName: bot-icons-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trekkermd-bot-service
+spec:
+  selector:
+    app: trekkermd-bot
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: LoadBalancer
+
+---
+# Persistent Volume Claims for data persistence
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bot-data-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bot-auth-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bot-icons-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+
+---
+# Resource Quota to ensure cluster-wide limits
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: trekkermd-bot-quota
+spec:
+  hard:
+    requests.cpu: "250m"
+    requests.memory: 512Mi
+    limits.cpu: "500m"
+    limits.memory: 1Gi

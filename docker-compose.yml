@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  whatsapp-bot:
+    build: .
+    container_name: trekkermd-bot
+    restart: unless-stopped
+    
+    # Resource limits: 0.5 CPU cores and 1GB memory
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 512M
+    
+    # Environment variables
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - NODE_OPTIONS=--max-old-space-size=768 --optimize-for-size --gc-interval=100
+      - UV_THREADPOOL_SIZE=4
+    
+    # Volume mounts for persistent data
+    volumes:
+      - ./data:/app/data
+      - ./auth:/app/auth
+      - ./icons:/app/icons
+    
+    # Port mapping
+    ports:
+      - "8080:8080"
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Logging configuration to prevent log buildup
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Create networks for isolation
+networks:
+  default:
+    driver: bridge
