@@ -16,7 +16,7 @@ import { commandRegistry, type CommandContext } from './command-registry.js';
 import { AutoStatusService } from './auto-status.js';
 import { antideleteService } from './antidelete.js';
 import { getAntiViewOnceService } from './antiviewonce.js';
-import { SessionManager } from './session-manager.js';
+import { SessionManager } from './session-manager';
 import './core-commands.js'; // Load core commands
 
 export class WhatsAppBot {
