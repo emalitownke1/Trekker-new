@@ -27,18 +27,18 @@ export async function setupVite(app: Express, server: Server) {
   }
 
   log("Setting up development vite middleware");
-  
+
   // Dynamic imports to avoid loading vite in production
   const { createServer: createViteServer, createLogger } = await import("vite");
   const userCfgExport = (await import("../vite.config")).default;
-  
+
   // Resolve the config function to get the actual configuration
   const userCfg = typeof userCfgExport === "function"
     ? userCfgExport({ mode: process.env.NODE_ENV === "production" ? "production" : "development", command: "serve" })
     : userCfgExport;
-  
+
   const viteLogger = createLogger();
-  
+
   const vite = await createViteServer({
     ...userCfg,
     configFile: false,
@@ -68,7 +68,7 @@ export async function setupVite(app: Express, server: Server) {
   // Only serve HTML for non-API routes to prevent API endpoints from returning HTML
   app.get("*", async (req, res, next) => {
     const url = req.originalUrl;
-    
+
     // Skip API routes - let them be handled by the registered API routes
     if (url.startsWith('/api/') || url.startsWith('/ws')) {
       return next();
@@ -107,7 +107,7 @@ export function serveStatic(app: Express) {
   }
 
   // For Cloud Run deployment, always serve at root path
-  const base = '/';
+  const base = process.env.BASE_PATH || '/';
   const basePath = base;
 
   log(`Serving static files at base path: ${basePath}`);
@@ -117,7 +117,7 @@ export function serveStatic(app: Express) {
 
   // Handle SPA routing - serve index.html for non-API routes under base path
   const indexPath = path.resolve(distPath, "index.html");
-  
+
   if (basePath === '/') {
     // Root deployment - catch all non-API routes
     app.use("*", (req, res, next) => {
@@ -136,7 +136,7 @@ export function serveStatic(app: Express) {
       }
       res.sendFile(indexPath);
     });
-    
+
     // Also handle root-level API routes for compatibility
     app.use("*", (req, res, next) => {
       if (req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/ws')) {
