@@ -4170,6 +4170,24 @@ Thank you for choosing TREKKER-MD! 🚀`;
     }
   };
 
+  // Health check endpoint for Cloud Run
+  app.get('/health', (req, res) => {
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      server: getServerName(),
+      port: process.env.PORT || '5000'
+    });
+  });
+
+  app.get('/', (req, res) => {
+    res.status(200).json({ 
+      message: 'Server is running',
+      server: getServerName(),
+      timestamp: new Date().toISOString()
+    });
+  });
+
   // Zod schemas for validation
   const botCreateSchema = z.object({
     botData: z.object({
