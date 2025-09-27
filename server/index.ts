@@ -1,7 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initializeDatabase } from "./db";
+import { initializeDatabase, getServerName } from "./db";
 import "./services/enhanced-commands";
 
 // Guard to prevent double-start of monitoring
