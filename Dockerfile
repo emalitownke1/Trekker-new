@@ -1,6 +1,9 @@
 # Use Node.js 20+ as required by your engines
 FROM node:20-alpine
 
+# Install git (required by yarn for some dependencies)
+RUN apk add --no-cache git
+
 # Set working directory
 WORKDIR /app
 
