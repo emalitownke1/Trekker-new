@@ -232,10 +232,10 @@ export class WhatsAppBot {
           
           try {
             // Filter out reaction messages from console logs to reduce noise
-            const isReactionMessage = message.message && message.message.reactionMessage;
+            const isReactionMessage = message.message?.reactionMessage;
             
             if (isReactionMessage) {
-              console.log(`   😀 Reaction Message: ${message.message.reactionMessage.text} to ${message.message.reactionMessage.key?.id}`);
+              console.log(`   😀 Reaction Message: ${message.message?.reactionMessage?.text} to ${message.message?.reactionMessage?.key?.id}`);
             }
 
             console.log(`   💾 Storing in antidelete service...`);

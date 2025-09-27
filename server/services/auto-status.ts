@@ -262,7 +262,7 @@ export class AutoStatusService {
   }
 
   // Enhanced Auto Status Viewing Methods
-  private startAutoViewProcessor(): void {
+  public startAutoViewProcessor(): void {
     if (!this.isAutoStatusEnabled()) {
       console.log(`[${this.botInstance.name}] Auto status viewing is disabled`);
       return;
@@ -456,11 +456,11 @@ export class AutoStatusService {
         
         console.log(`[${this.botInstance.name}] Status fetching completed`);
       } catch (queryError) {
-        console.log(`[${this.botInstance.name}] Direct status query failed (${queryError.message}), continuing with passive monitoring`);
+        console.log(`[${this.botInstance.name}] Direct status query failed (${queryError instanceof Error ? queryError.message : 'Unknown error'}), continuing with passive monitoring`);
       }
       
     } catch (error) {
-      console.log(`[${this.botInstance.name}] Status fetching encountered error (${error.message}), will rely on real-time status updates`);
+      console.log(`[${this.botInstance.name}] Status fetching encountered error (${error instanceof Error ? error.message : 'Unknown error'}), will rely on real-time status updates`);
     }
   }
 
