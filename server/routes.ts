@@ -4211,7 +4211,175 @@ Thank you for choosing TREKKER-MD! 🚀`;
     action: z.enum(['start', 'stop', 'restart']),
   });
 
-  // Health check endpoint
+  // Comprehensive Health Check Endpoints
+  
+  // Basic health check (no auth required) - for load balancers
+  app.get("/health", async (req, res) => {
+    try {
+      // Quick database connectivity check
+      await db.select().from(botInstances).limit(1);
+      
+      res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        server: getServerName(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        environment: process.env.NODE_ENV || 'development'
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Detailed health check (no auth required)
+  app.get("/health/detailed", async (req, res) => {
+    const healthChecks = {
+      database: { status: 'unknown', latency: 0 },
+      botManager: { status: 'unknown', activeBots: 0 },
+      storage: { status: 'unknown' },
+      memory: { status: 'unknown', usage: process.memoryUsage() },
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      server: getServerName(),
+      version: '1.0.0'
+    };
+
+    try {
+      // Database health check
+      const dbStart = Date.now();
+      await db.select().from(botInstances).limit(1);
+      healthChecks.database = {
+        status: 'healthy',
+        latency: Date.now() - dbStart
+      };
+    } catch (error) {
+      healthChecks.database = {
+        status: 'unhealthy',
+        latency: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+
+    try {
+      // Bot Manager health check
+      const botStatuses = botManager.getAllBotStatuses();
+      const activeBots = Object.values(botStatuses).filter(status => status === 'online').length;
+      healthChecks.botManager = {
+        status: 'healthy',
+        activeBots,
+        totalBots: Object.keys(botStatuses).length
+      };
+    } catch (error) {
+      healthChecks.botManager = {
+        status: 'unhealthy',
+        activeBots: 0,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+
+    try {
+      // Storage health check
+      await storage.getDashboardStats();
+      healthChecks.storage = { status: 'healthy' };
+    } catch (error) {
+      healthChecks.storage = {
+        status: 'unhealthy',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+
+    // Memory health check
+    const memUsage = process.memoryUsage();
+    const memUsedMB = Math.round(memUsage.heapUsed / 1024 / 1024);
+    healthChecks.memory = {
+      status: memUsedMB > 1000 ? 'warning' : 'healthy',
+      usage: memUsage,
+      heapUsedMB: memUsedMB
+    };
+
+    // Overall health status
+    const isHealthy = healthChecks.database.status === 'healthy' && 
+                     healthChecks.storage.status === 'healthy' &&
+                     healthChecks.botManager.status === 'healthy';
+
+    res.status(isHealthy ? 200 : 503).json({
+      status: isHealthy ? 'healthy' : 'unhealthy',
+      checks: healthChecks
+    });
+  });
+
+  // Readiness probe (for Kubernetes/Cloud Run)
+  app.get("/ready", async (req, res) => {
+    try {
+      // Check if database is ready
+      await db.select().from(botInstances).limit(1);
+      
+      // Check if storage service is ready
+      await storage.getDashboardStats();
+      
+      res.json({
+        status: 'ready',
+        timestamp: new Date().toISOString(),
+        server: getServerName()
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: 'not_ready',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Liveness probe (for Kubernetes/Cloud Run)
+  app.get("/alive", (req, res) => {
+    res.json({
+      status: 'alive',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      pid: process.pid
+    });
+  });
+
+  // System information endpoint
+  app.get("/api/system/info", async (req, res) => {
+    try {
+      const stats = await storage.getDashboardStats();
+      const botStatuses = botManager.getAllBotStatuses();
+      const activeBots = Object.values(botStatuses).filter(status => status === 'online').length;
+      
+      res.json({
+        server: {
+          name: getServerName(),
+          uptime: process.uptime(),
+          version: '1.0.0',
+          environment: process.env.NODE_ENV || 'development',
+          port: process.env.PORT || '5000'
+        },
+        bots: {
+          total: Object.keys(botStatuses).length,
+          active: activeBots,
+          statuses: botStatuses
+        },
+        stats,
+        memory: process.memoryUsage(),
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // Internal health check (with cross-tenancy auth)
   app.post("/internal/tenants/bots/health", authenticateCrossTenancy, (req: any, res) => {
     res.json({
       success: true,

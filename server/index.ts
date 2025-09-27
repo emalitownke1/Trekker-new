@@ -122,16 +122,63 @@ app.use((req, res, next) => {
 
 (async () => {
 
-  // Initialize database (create tables if they don't exist)
-  await initializeDatabase();
+  // Comprehensive startup health checks
+  console.log('🔄 Starting application initialization...');
   
-  // Initialize offer system
-  const { offerManager } = await import('./services/offer-manager');
-  await offerManager.initializeOfferSystem();
+  try {
+    // Initialize database (create tables if they don't exist)
+    console.log('🔄 Initializing database...');
+    await initializeDatabase();
+    console.log('✅ Database initialized successfully');
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error);
+    process.exit(1);
+  }
   
-  // Start scheduled bot monitoring immediately after database initialization
-  console.log('🚀 Bootstrap: Starting scheduled monitoring system...');
-  await startMonitoringOnce();
+  try {
+    // Initialize offer system
+    console.log('🔄 Initializing offer management system...');
+    const { offerManager } = await import('./services/offer-manager');
+    await offerManager.initializeOfferSystem();
+    console.log('✅ Offer management system initialized');
+  } catch (error) {
+    console.error('❌ Offer system initialization failed:', error);
+    process.exit(1);
+  }
+  
+  try {
+    // Start scheduled bot monitoring immediately after database initialization
+    console.log('🔄 Starting scheduled monitoring system...');
+    await startMonitoringOnce();
+    console.log('✅ Monitoring system started');
+  } catch (error) {
+    console.error('❌ Monitoring system failed to start:', error);
+    // Don't exit on monitoring failure, it's not critical for basic operation
+    console.log('⚠️ Continuing without monitoring system');
+  }
+  
+  // Test critical services
+  try {
+    console.log('🔄 Testing storage service...');
+    const { storage } = await import('./storage');
+    await storage.getDashboardStats();
+    console.log('✅ Storage service operational');
+  } catch (error) {
+    console.error('❌ Storage service test failed:', error);
+    process.exit(1);
+  }
+  
+  try {
+    console.log('🔄 Testing bot manager...');
+    const { botManager } = await import('./services/bot-manager');
+    botManager.getAllBotStatuses(); // This should not throw
+    console.log('✅ Bot manager operational');
+  } catch (error) {
+    console.error('❌ Bot manager test failed:', error);
+    process.exit(1);
+  }
+  
+  console.log('✅ All critical systems initialized successfully');
   
   const server = await registerRoutes(app);
 
@@ -147,16 +194,45 @@ app.use((req, res, next) => {
   await setupVite(app, server);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // Google Cloud Run expects port 8080, Replit uses 5000
+  // Default to 5000 for Replit, but respect PORT environment variable for Cloud Run
   const port = parseInt(process.env.PORT || '5000', 10);
+  
+  // Add startup health check
+  console.log(`🚀 Starting server on port ${port}`);
+  console.log(`🏷️ Server name: ${getServerName()}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`💾 Memory usage: ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)}MB`);
+  
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`✅ Server ready and listening on port ${port}`);
+    log(`🔗 Health check available at: http://0.0.0.0:${port}/health`);
+    log(`📊 System info available at: http://0.0.0.0:${port}/api/system/info`);
+    
+    // Log startup success
+    setTimeout(async () => {
+      try {
+        const { storage } = await import('./storage');
+        await storage.createCrossTenancyActivity({
+          type: 'server_startup',
+          description: `Server ${getServerName()} started successfully on port ${port}`,
+          metadata: { 
+            port,
+            environment: process.env.NODE_ENV || 'development',
+            memoryUsage: process.memoryUsage(),
+            uptime: process.uptime()
+          },
+          serverName: getServerName(),
+          remoteTenancy: undefined
+        });
+      } catch (error) {
+        console.log('Could not log startup activity:', error);
+      }
+    }, 2000);
   });
 
   // Graceful shutdown handling for containerized environments
