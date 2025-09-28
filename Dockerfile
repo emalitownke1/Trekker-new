@@ -108,8 +108,9 @@ RUN echo 'server {' > /etc/nginx/http.d/default.conf && \
     echo '    }' >> /etc/nginx/http.d/default.conf && \
     echo '}' >> /etc/nginx/http.d/default.conf
 
-# Create supervisor configuration
-RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+# Create supervisor configuration directory and file
+RUN mkdir -p /etc/supervisor/conf.d && \
+    echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
     echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'user=root' >> /etc/supervisor/conf.d/supervisord.conf && \
     echo 'logfile=/var/log/supervisor/supervisord.log' >> /etc/supervisor/conf.d/supervisord.conf && \
