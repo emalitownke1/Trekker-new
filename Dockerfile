@@ -67,69 +67,65 @@ RUN yarn install --production --frozen-lockfile && yarn cache clean
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server ./server
 
-# Copy nginx configuration
-COPY <<EOF /etc/nginx/http.d/default.conf
-server {
-    listen 8080;
-    server_name localhost;
-
-    # Serve static files
-    location / {
-        root /app/dist;
-        try_files \$uri \$uri/ /index.html;
-    }
-
-    # Proxy API requests to Express server
-    location /api/ {
-        proxy_pass http://localhost:3001/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-        proxy_cache_bypass \$http_upgrade;
-    }
-
-    # WebSocket support
-    location /ws {
-        proxy_pass http://localhost:3001;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
-    }
-}
-EOF
+# Create nginx configuration
+RUN echo 'server {' > /etc/nginx/http.d/default.conf && \
+    echo '    listen 8080;' >> /etc/nginx/http.d/default.conf && \
+    echo '    server_name localhost;' >> /etc/nginx/http.d/default.conf && \
+    echo '' >> /etc/nginx/http.d/default.conf && \
+    echo '    # Serve static files' >> /etc/nginx/http.d/default.conf && \
+    echo '    location / {' >> /etc/nginx/http.d/default.conf && \
+    echo '        root /app/dist;' >> /etc/nginx/http.d/default.conf && \
+    echo '        try_files $uri $uri/ /index.html;' >> /etc/nginx/http.d/default.conf && \
+    echo '    }' >> /etc/nginx/http.d/default.conf && \
+    echo '' >> /etc/nginx/http.d/default.conf && \
+    echo '    # Proxy API requests to Express server' >> /etc/nginx/http.d/default.conf && \
+    echo '    location /api/ {' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_pass http://localhost:3001/;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_http_version 1.1;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header Upgrade $http_upgrade;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header Connection '"'"'upgrade'"'"';' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header Host $host;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header X-Forwarded-Proto $scheme;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_cache_bypass $http_upgrade;' >> /etc/nginx/http.d/default.conf && \
+    echo '    }' >> /etc/nginx/http.d/default.conf && \
+    echo '' >> /etc/nginx/http.d/default.conf && \
+    echo '    # WebSocket support' >> /etc/nginx/http.d/default.conf && \
+    echo '    location /ws {' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_pass http://localhost:3001;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_http_version 1.1;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header Upgrade $http_upgrade;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header Connection "upgrade";' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header Host $host;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header X-Real-IP $remote_addr;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;' >> /etc/nginx/http.d/default.conf && \
+    echo '        proxy_set_header X-Forwarded-Proto $scheme;' >> /etc/nginx/http.d/default.conf && \
+    echo '    }' >> /etc/nginx/http.d/default.conf && \
+    echo '}' >> /etc/nginx/http.d/default.conf
 
 # Create supervisor configuration
-COPY <<EOF /etc/supervisor/conf.d/supervisord.conf
-[supervisord]
-nodaemon=true
-user=root
-logfile=/var/log/supervisor/supervisord.log
-pidfile=/var/run/supervisord.pid
-
-[program:nginx]
-command=nginx -g 'daemon off;'
-autostart=true
-autorestart=true
-stderr_logfile=/var/log/nginx/error.log
-stdout_logfile=/var/log/nginx/access.log
-
-[program:node-app]
-command=yarn start:prod
-directory=/app
-autostart=true
-autorestart=true
-environment=NODE_ENV=production,PORT=3001
-stderr_logfile=/var/log/node-app/error.log
-stdout_logfile=/var/log/node-app/access.log
-EOF
+RUN echo '[supervisord]' > /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'nodaemon=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'user=root' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'logfile=/var/log/supervisor/supervisord.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'pidfile=/var/run/supervisord.pid' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:nginx]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=nginx -g '"'"'daemon off;'"'"'' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/var/log/nginx/error.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/nginx/access.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo '[program:node-app]' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'command=yarn start:prod' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'directory=/app' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autostart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'autorestart=true' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'environment=NODE_ENV=production,PORT=3001' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stderr_logfile=/var/log/node-app/error.log' >> /etc/supervisor/conf.d/supervisord.conf && \
+    echo 'stdout_logfile=/var/log/node-app/access.log' >> /etc/supervisor/conf.d/supervisord.conf
 
 # Create log directories
 RUN mkdir -p /var/log/supervisor /var/log/nginx /var/log/node-app
