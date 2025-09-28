@@ -13,6 +13,10 @@ RUN apk add --no-cache \
     harfbuzz \
     ca-certificates \
     ttf-freefont \
+    git \
+    python3 \
+    make \
+    g++ \
     && rm -rf /var/cache/apk/*
 
 # Tell Puppeteer to use the installed Chromium
