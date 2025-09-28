@@ -193,6 +193,16 @@ app.use((req, res, next) => {
   // Setup vite for development
   await setupVite(app, server);
 
+  // Add explicit root route handler before setupVite
+  app.get('/', async (req, res, next) => {
+    // In production, let static file handler serve index.html
+    if (process.env.NODE_ENV === 'production') {
+      return next();
+    }
+    // In development, let Vite handle it
+    return next();
+  });
+
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Google Cloud Run expects port 8080, Replit uses 5000
   // Default to 5000 for Replit, but respect PORT environment variable for Cloud Run

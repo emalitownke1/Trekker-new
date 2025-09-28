@@ -101,52 +101,65 @@ export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "..", "dist", "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
-    );
+    console.error(`❌ Static files directory not found: ${distPath}`);
+    console.error('Please run "yarn build" to generate static files');
+
+    // Provide a fallback response for production deployments
+    app.get("*", (req, res, next) => {
+      const url = req.originalUrl;
+
+      // Skip API routes, health checks, and WebSocket connections
+      if (url.startsWith('/api/') || 
+          url.startsWith('/ws') || 
+          url.startsWith('/health') ||
+          url.startsWith('/ready') ||
+          url.startsWith('/alive') ||
+          url.startsWith('/internal/')) {
+        return next();
+      }
+
+      res.status(503).send(`
+        <html>
+          <head><title>Application Not Built</title></head>
+          <body>
+            <h1>Application Not Built</h1>
+            <p>Please run "yarn build" to generate static files.</p>
+          </body>
+        </html>
+      `);
+    });
+    return;
   }
 
-  // For Cloud Run deployment, always serve at root path
-  const base = process.env.BASE_PATH || '/';
-  const basePath = base;
+  log(`📁 Serving static files from: ${distPath}`);
 
-  log(`Serving static files at base path: ${basePath}`);
+  // Serve static files with proper caching headers
+  app.use(express.static(distPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+  }));
 
-  // Serve static assets under the base path
-  app.use(basePath, express.static(distPath));
+  // Handle SPA routing - serve index.html for non-API routes
+  app.get("*", (req, res, next) => {
+    const url = req.originalUrl;
 
-  // Handle SPA routing - serve index.html for non-API routes under base path
-  const indexPath = path.resolve(distPath, "index.html");
+    // Skip API routes, health checks, and WebSocket connections
+    if (url.startsWith('/api/') || 
+        url.startsWith('/ws') || 
+        url.startsWith('/health') ||
+        url.startsWith('/ready') ||
+        url.startsWith('/alive') ||
+        url.startsWith('/internal/')) {
+      return next();
+    }
 
-  if (basePath === '/') {
-    // Root deployment - catch all non-API routes
-    app.use("*", (req, res, next) => {
-      // Skip API routes - let them be handled by the registered API routes
-      if (req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/ws')) {
-        return next();
-      }
+    // Serve index.html for all other routes (SPA routing)
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
-    });
-  } else {
-    // Path-based deployment - catch routes under base path
-    app.get([basePath, `${basePath}/*`], (req, res, next) => {
-      // Skip API routes - let them be handled by the registered API routes  
-      if (req.originalUrl.startsWith(`${basePath}/api/`) || req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/ws')) {
-        return next();
-      }
-      res.sendFile(indexPath);
-    });
-
-    // Also handle root-level API routes for compatibility
-    app.use("*", (req, res, next) => {
-      if (req.originalUrl.startsWith('/api/') || req.originalUrl.startsWith('/ws')) {
-        return next();
-      }
-      // For non-API routes not under base path, redirect to base path
-      if (!req.originalUrl.startsWith(basePath)) {
-        return res.redirect(basePath);
-      }
-      next();
-    });
-  }
+    } else {
+      res.status(404).send('Index file not found. Please run "yarn build" first.');
+    }
+  });
 }
