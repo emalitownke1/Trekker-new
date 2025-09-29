@@ -12,7 +12,6 @@
     "build": "yarn vite build",
     
     "postbuild": "echo 'Build completed successfully'",
-
     "typecheck": "yarn check",
     "db:push": "yarn drizzle-kit push",
     "install": "yarn --frozen-lockfile --production",
