@@ -132,16 +132,19 @@
   }
   
   /* Special offer styling enhancement */
-  .special-offer {
+  .special-offer, [data-special-offer] {
     background: linear-gradient(135deg, 
       hsl(271 76% 53%) 0%, 
       hsl(142 76% 36%) 50%, 
       hsl(199 89% 48%) 100%) !important;
     position: relative;
     overflow: hidden;
+    border-radius: 12px !important;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
   }
   
-  .special-offer::before {
+  .special-offer::before, [data-special-offer]::before {
     content: '';
     position: absolute;
     top: 0;
@@ -150,6 +153,33 @@
     bottom: 0;
     background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
     animation: shimmer 3s infinite;
+  }
+  
+  /* Enhanced countdown styling */
+  .countdown-timer {
+    background: rgba(0, 0, 0, 0.4) !important;
+    backdrop-filter: blur(10px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    padding: 1rem !important;
+    margin: 1rem 0 !important;
+  }
+  
+  .countdown-number {
+    font-size: 2.5rem !important;
+    font-weight: 800 !important;
+    background: linear-gradient(135deg, #ffffff, #00ff88) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    text-shadow: 0 0 20px rgba(0, 255, 136, 0.5) !important;
+  }
+  
+  .countdown-label {
+    font-size: 0.9rem !important;
+    color: rgba(255, 255, 255, 0.8) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
   }
   
   /* Status indicators */
@@ -206,6 +236,66 @@
   /* Fix any potential white backgrounds */
   .bg-white {
     background: hsl(var(--card)) !important;
+  }
+  
+  /* Main content area styling */
+  main {
+    background: transparent !important;
+    min-height: 100vh !important;
+  }
+  
+  /* Dashboard and page container styling */
+  .page-container, .dashboard-container {
+    background: transparent !important;
+    padding: 2rem !important;
+  }
+  
+  /* Step styling for registration flow */
+  .step-container {
+    background: linear-gradient(135deg, 
+      hsl(var(--card) / 0.9) 0%, 
+      hsl(var(--card) / 0.7) 100%) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid hsl(var(--border) / 0.3) !important;
+    border-radius: 12px !important;
+    padding: 2rem !important;
+    margin: 1rem 0 !important;
+    box-shadow: 0 8px 32px hsl(0 0% 0% / 0.3) !important;
+  }
+  
+  /* Progress indicators */
+  .progress-step {
+    background: linear-gradient(135deg, 
+      hsl(var(--primary)) 0%, 
+      hsl(142 76% 42%) 100%) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 3rem !important;
+    height: 3rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 16px hsl(var(--primary) / 0.3) !important;
+  }
+  
+  .progress-step.completed {
+    background: linear-gradient(135deg, 
+      hsl(142 76% 36%) 0%, 
+      hsl(142 76% 50%) 100%) !important;
+  }
+  
+  .progress-step.current {
+    animation: pulse-glow 2s infinite !important;
+  }
+  
+  /* Form styling enhancements */
+  .form-section {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 1.5rem !important;
+    margin: 1rem 0 !important;
   }
   
   /* Scrollbar styling */
@@ -294,5 +384,16 @@
   }
   50% {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.8);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 16px hsl(var(--primary) / 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 24px hsl(var(--primary) / 0.6);
+    transform: scale(1.05);
   }
 }
