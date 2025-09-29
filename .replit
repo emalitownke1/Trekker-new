@@ -4,3 +4,19 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
+
+[workflows]
+runButton = "Start Production Server"
+
+[[workflows.workflow]]
+name = "Start Production Server"
+author = 48059444
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "yarn build"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "yarn start"
