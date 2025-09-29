@@ -186,18 +186,20 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Setup static file serving for client directory with base path /
+  // Setup static file serving for built production files
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const clientPath = path.join(__dirname, '..', 'client');
+  const distPath = path.join(__dirname, '..', 'dist', 'public');
   
-  // Serve static files from client directory
-  app.use('/src', express.static(path.join(clientPath, 'src')));
-  app.use('/assets', express.static(path.join(clientPath, 'assets')));
+  // Serve built static assets
+  app.use('/assets', express.static(path.join(distPath, 'assets')));
+  
+  // Serve all static files from dist/public
+  app.use(express.static(distPath));
   
   // Serve index.html for the root route and any client-side routes
   app.get('/', (_req, res) => {
-    res.sendFile(path.join(clientPath, 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
   
   // Handle client-side routing - serve index.html for any route that doesn't start with /api
@@ -205,7 +207,7 @@ app.use((req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/ws')) {
       return next();
     }
-    res.sendFile(path.join(clientPath, 'index.html'));
+    res.sendFile(path.join(distPath, 'index.html'));
   });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
