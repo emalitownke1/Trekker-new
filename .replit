@@ -34,14 +34,23 @@ args = "WhatsApp Bot Server"
 name = "WhatsApp Bot Server"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "yarn dev"
-waitForPort = 5000
-
 [workflows.workflow.metadata]
 outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "yarn start"
+waitForPort = 5000
 
 [[ports]]
 localPort = 5000
 externalPort = 80
+
+[[ports]]
+localPort = 42983
+externalPort = 3000
+
+[deployment]
+deploymentTarget = "autoscale"
+run = ["yarn", "start"]
+build = ["yarn", "build"]
