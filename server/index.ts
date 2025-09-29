@@ -149,16 +149,9 @@ app.use((req, res, next) => {
     process.exit(1);
   }
   
-  try {
-    // Start scheduled bot monitoring immediately after database initialization
-    console.log('🔄 Starting scheduled monitoring system...');
-    await startMonitoringOnce();
-    console.log('✅ Monitoring system started');
-  } catch (error) {
-    console.error('❌ Monitoring system failed to start:', error);
-    // Don't exit on monitoring failure, it's not critical for basic operation
-    console.log('⚠️ Continuing without monitoring system');
-  }
+  // Automatic bot monitoring has been disabled
+  // Bots should be manually restarted through the GUI at guest/bot-management
+  console.log('ℹ️ Automatic bot monitoring is disabled - use GUI for bot management');
   
   // Test critical services
   try {

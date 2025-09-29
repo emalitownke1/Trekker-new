@@ -116,24 +116,8 @@ export class WhatsAppBot {
           description: 'Bot disconnected'
         });
 
-        if (shouldReconnect) {
-          // Auto-reconnect with exponential backoff to prevent crash loops
-          const reconnectDelay = Math.min(5000 * (this.reconnectAttempts || 1), 30000);
-          this.reconnectAttempts = (this.reconnectAttempts || 0) + 1;
-
-          setTimeout(async () => {
-            try {
-              await this.start();
-            } catch (error) {
-              await storage.createActivity({
-                serverName: this.botInstance.serverName,
-                botInstanceId: this.botInstance.id,
-                type: 'error',
-                description: `Reconnect attempt failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-              });
-            }
-          }, reconnectDelay);
-        }
+        // Automatic reconnection has been disabled
+        // Credentials should be updated through the GUI at guest/bot-management
       } else if (connection === 'open') {
         console.log(`Bot ${this.botInstance.name} is ready! 🎉 WELCOME TO TREKKERMD LIFETIME BOT`);
         this.isRunning = true;
