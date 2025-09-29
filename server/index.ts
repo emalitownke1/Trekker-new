@@ -191,23 +191,47 @@ app.use((req, res, next) => {
   const __dirname = path.dirname(__filename);
   const distPath = path.join(__dirname, '..', 'dist', 'public');
   
-  // Serve built static assets
-  app.use('/assets', express.static(path.join(distPath, 'assets')));
+  // Check if build files exist
+  if (!require('fs').existsSync(distPath)) {
+    console.error('❌ Build files not found. Please run "yarn build" first.');
+    process.exit(1);
+  }
   
-  // Serve all static files from dist/public
-  app.use(express.static(distPath));
+  // Serve built static assets with proper headers
+  app.use('/assets', express.static(path.join(distPath, 'assets'), {
+    maxAge: '1y',
+    etag: true,
+    lastModified: true
+  }));
   
-  // Serve index.html for the root route and any client-side routes
-  app.get('/', (_req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
+  // Serve static files from dist/public with caching
+  app.use(express.static(distPath, {
+    maxAge: '1d',
+    etag: true,
+    lastModified: true,
+    index: false // Don't serve index.html automatically
+  }));
   
   // Handle client-side routing - serve index.html for any route that doesn't start with /api
   app.get('*', (req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/ws')) {
+    const path = req.path;
+    
+    // Skip API routes, health checks, WebSocket connections, and static assets
+    if (path.startsWith('/api') || 
+        path.startsWith('/health') || 
+        path.startsWith('/ws') ||
+        path.startsWith('/assets/')) {
       return next();
     }
-    res.sendFile(path.join(distPath, 'index.html'));
+    
+    // Serve index.html for all client routes
+    const indexPath = path.join(distPath, 'index.html');
+    res.sendFile(indexPath, (err) => {
+      if (err) {
+        console.error('Error serving index.html:', err);
+        res.status(500).send('Error loading application');
+      }
+    });
   });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
