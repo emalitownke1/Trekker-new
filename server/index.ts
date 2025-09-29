@@ -203,7 +203,7 @@ app.use((req, res, next) => {
   app.use('/assets', express.static(path.join(clientPath, 'assets')));
   
   // Serve index.html for the root route and any client-side routes
-  app.get('/', (req, res) => {
+  app.get('/', (_req, res) => {
     res.sendFile(path.join(clientPath, 'index.html'));
   });
   
