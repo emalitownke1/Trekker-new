@@ -14,7 +14,7 @@
     "postbuild": "echo 'Build completed successfully'",
     "typecheck": "yarn check",
     "db:push": "yarn drizzle-kit push",
-    "install": "yarn --frozen-lockfile --production",
+    "install": "yarn --frozen-lockfile --production"
     
   },
   "dependencies": {
