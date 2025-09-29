@@ -240,143 +240,176 @@ export default function Dashboard() {
   }, [isAdmin]);
 
   return (
-    <div>
-      {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-2xl font-bold text-foreground">🤖 {serverInfo.serverName || 'TREKKER-MD'} Dashboard</h2>
-            </div>
-            <p className="text-muted-foreground">
-              Ultra fast lifetime WhatsApp bot automation
-              {serverInfo.serverName && (
-                <span className="ml-2 text-xs bg-blue-600 text-white px-2 py-1 rounded">
-                  {serverInfo.currentBots}/{serverInfo.maxBots} slots used
-                </span>
-              )}
-              {!serverInfo.hasSecretConfig && serverInfo.serverName === 'default-server' && (
-                <span className="ml-2 text-xs bg-yellow-600 text-white px-2 py-1 rounded">
-                  ⚠️ Default server name - Configure recommended
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex items-center space-x-4">
-            {isAdmin && (
-              <div className="flex space-x-2">
-                <Button 
-                  onClick={() => setShowCommandManagement(true)}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  🔧 Manage Commands
-                </Button>
-                <Button 
-                  onClick={() => setShowAdminBotManagement(true)}
-                  className="bg-purple-600 hover:bg-purple-700 text-white"
-                >
-                  👥 Manage Bots
-                </Button>
-                <Button 
-                  onClick={() => setShowGodRegistry(true)}
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
-                >
-                  📱 God Registry
-                </Button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
+      {/* Modern Header */}
+      <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">🤖</span>
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                    {serverInfo.serverName || 'TREKKER-MD'} Dashboard
+                  </h1>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Ultra fast lifetime WhatsApp bot automation
+                  </p>
+                </div>
               </div>
-            )}
-            <div className="relative">
-              <button className="w-10 h-10 bg-muted rounded-md flex items-center justify-center hover:bg-muted/80 transition-colors" data-testid="button-notifications">
-                <i className="fas fa-bell text-muted-foreground"></i>
-              </button>
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full"></span>
+              <div className="flex items-center gap-3 mt-2">
+                {serverInfo.serverName && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                      {serverInfo.currentBots}/{serverInfo.maxBots} slots used
+                    </span>
+                  </div>
+                )}
+                {!serverInfo.hasSecretConfig && serverInfo.serverName === 'default-server' && (
+                  <div className="flex items-center gap-2 px-3 py-1 bg-amber-100 dark:bg-amber-900/30 rounded-full">
+                    <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                      ⚠️ Configure server name recommended
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              {isAdmin && (
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => setShowCommandManagement(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300 dark:border-blue-700"
+                  >
+                    <span className="mr-2">🔧</span>
+                    Commands
+                  </Button>
+                  <Button 
+                    onClick={() => setShowAdminBotManagement(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 dark:text-purple-300 dark:border-purple-700"
+                  >
+                    <span className="mr-2">👥</span>
+                    Bots
+                  </Button>
+                  <Button 
+                    onClick={() => setShowGodRegistry(true)}
+                    variant="ghost"
+                    size="sm"
+                    className="bg-orange-50 hover:bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700"
+                  >
+                    <span className="mr-2">📱</span>
+                    Registry
+                  </Button>
+                </div>
+              )}
+              <div className="relative">
+                <button className="w-10 h-10 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200" data-testid="button-notifications">
+                  <i className="fas fa-bell text-slate-600 dark:text-slate-400"></i>
+                </button>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="p-6">
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         {/* Statistics Cards - Admin Only */}
         {isAdmin && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-card border-border">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Total Bots</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="stat-total-bots">
+                  <div className="space-y-1">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Total Bots</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="stat-total-bots">
                       {statsLoading || botsLoading ? "..." : (stats as any)?.totalBots || 0}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-robot text-primary text-xl"></i>
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i className="fas fa-robot text-white text-xl"></i>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center space-x-2">
-                  <span className="text-green-400 text-sm">+{(stats as any)?.activeBots || 0}</span>
-                  <span className="text-muted-foreground text-sm">instances</span>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-md">
+                    <span className="text-green-600 dark:text-green-400 text-sm font-semibold">+{(stats as any)?.activeBots || 0}</span>
+                    <span className="text-green-600 dark:text-green-400 text-xs">active</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Active Bots</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="stat-active-bots">
+                  <div className="space-y-1">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Active Bots</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="stat-active-bots">
                       {statsLoading || botsLoading ? "..." : (stats as any)?.activeBots || 0}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-check-circle text-green-400 text-xl"></i>
+                  <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i className="fas fa-check-circle text-white text-xl"></i>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center space-x-2">
-                  <span className="text-green-400 text-sm">
-                    {(stats as any)?.totalBots ? Math.round(((stats as any).activeBots / (stats as any).totalBots) * 100) : 0}%
-                  </span>
-                  <span className="text-muted-foreground text-sm">uptime</span>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-md">
+                    <span className="text-green-600 dark:text-green-400 text-sm font-semibold">
+                      {(stats as any)?.totalBots ? Math.round(((stats as any).activeBots / (stats as any).totalBots) * 100) : 0}%
+                    </span>
+                    <span className="text-green-600 dark:text-green-400 text-xs">uptime</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Messages Today</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="stat-messages">
+                  <div className="space-y-1">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Messages Today</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="stat-messages">
                       {statsLoading ? "..." : (stats as any)?.messagesCount || 0}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-comment text-blue-400 text-xl"></i>
+                  <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i className="fas fa-comment text-white text-xl"></i>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center space-x-2">
-                  <span className="text-green-400 text-sm">+12.5%</span>
-                  <span className="text-muted-foreground text-sm">vs yesterday</span>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-md">
+                    <span className="text-green-600 dark:text-green-400 text-sm font-semibold">+12.5%</span>
+                    <span className="text-green-600 dark:text-green-400 text-xs">vs yesterday</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-card border-border">
+            <Card className="bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-muted-foreground text-sm">Commands Executed</p>
-                    <p className="text-2xl font-bold text-foreground" data-testid="stat-commands">
+                  <div className="space-y-1">
+                    <p className="text-slate-600 dark:text-slate-400 text-sm font-medium">Commands Executed</p>
+                    <p className="text-3xl font-bold text-slate-900 dark:text-white" data-testid="stat-commands">
                       {statsLoading ? "..." : (stats as any)?.commandsCount || 0}
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-terminal text-purple-400 text-xl"></i>
+                  <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <i className="fas fa-terminal text-white text-xl"></i>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center space-x-2">
-                  <span className="text-green-400 text-sm">+8.2%</span>
-                  <span className="text-muted-foreground text-sm">from last hour</span>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-md">
+                    <span className="text-green-600 dark:text-green-400 text-sm font-semibold">+8.2%</span>
+                    <span className="text-green-600 dark:text-green-400 text-xs">vs last hour</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -385,11 +418,15 @@ export default function Dashboard() {
 
         {/* Active Offer Banner */}
         {!offerLoading && offerInfo?.isActive && (
-          <Card className="bg-gradient-to-r from-green-600 to-emerald-600 border-none mb-6 text-white">
-            <CardContent className="p-6">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold mb-2">🎁 SPECIAL OFFER ACTIVE!</h3>
-                <p className="text-green-100 mb-4">{offerInfo.offer?.name} - Limited Time Only!</p>
+          <Card className="bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 border-none shadow-xl overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent"></div>
+            <CardContent className="p-8 relative">
+              <div className="text-center text-white">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-white/20 rounded-full mb-4">
+                  <span className="text-2xl">🎁</span>
+                </div>
+                <h3 className="text-3xl font-bold mb-2">SPECIAL OFFER ACTIVE!</h3>
+                <p className="text-emerald-100 text-lg mb-6 font-medium">{offerInfo.offer?.name} - Limited Time Only!</p>
                 
                 {offerInfo.offer?.endTime && (() => {
                   const endTime = new Date(offerInfo.offer.endTime);
@@ -397,8 +434,8 @@ export default function Dashboard() {
                   
                   if (timeDiff <= 0) {
                     return (
-                      <div className="bg-white/20 rounded-lg p-4 text-center">
-                        <p className="text-lg font-bold text-red-200">Offer Expired</p>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 text-center">
+                        <p className="text-xl font-bold text-red-200">Offer Expired</p>
                       </div>
                     );
                   }
@@ -409,30 +446,33 @@ export default function Dashboard() {
                   const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
                   
                   return (
-                    <div className="grid grid-cols-4 gap-4 mb-4">
-                      <div className="bg-white/20 rounded-lg p-3">
-                        <div className="text-2xl font-bold">{days}</div>
-                        <div className="text-sm text-green-100">Days</div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                        <div className="text-3xl font-bold">{days}</div>
+                        <div className="text-sm text-emerald-100 font-medium">Days</div>
                       </div>
-                      <div className="bg-white/20 rounded-lg p-3">
-                        <div className="text-2xl font-bold">{hours}</div>
-                        <div className="text-sm text-green-100">Hours</div>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                        <div className="text-3xl font-bold">{hours}</div>
+                        <div className="text-sm text-emerald-100 font-medium">Hours</div>
                       </div>
-                      <div className="bg-white/20 rounded-lg p-3">
-                        <div className="text-2xl font-bold">{minutes}</div>
-                        <div className="text-sm text-green-100">Minutes</div>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                        <div className="text-3xl font-bold">{minutes}</div>
+                        <div className="text-sm text-emerald-100 font-medium">Minutes</div>
                       </div>
-                      <div className="bg-white/20 rounded-lg p-3">
-                        <div className="text-2xl font-bold">{seconds}</div>
-                        <div className="text-sm text-green-100">Seconds</div>
+                      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+                        <div className="text-3xl font-bold">{seconds}</div>
+                        <div className="text-sm text-emerald-100 font-medium">Seconds</div>
                       </div>
                     </div>
                   );
                 })()}
                 
-                <div className="bg-white/10 rounded-lg p-4">
-                  <p className="font-semibold text-lg">🚀 Register now and get instant approval!</p>
-                  <p className="text-sm text-green-100 mt-1">
+                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+                  <div className="flex items-center justify-center gap-3 mb-3">
+                    <span className="text-2xl">🚀</span>
+                    <p className="font-bold text-xl">Register now and get instant approval!</p>
+                  </div>
+                  <p className="text-emerald-100 font-medium">
                     All bots registered during this offer period will be automatically approved for {offerInfo.offer?.durationMonths} month{offerInfo.offer?.durationMonths !== 1 ? 's' : ''}!
                   </p>
                 </div>
@@ -443,76 +483,88 @@ export default function Dashboard() {
 
         {/* Step-by-step Bot Registration Flow - Guest Mode Only */}
         {!isAdmin && (
-          <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-2 border-blue-200 dark:border-blue-800 mb-6">
-            <CardContent className="p-6">
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold text-foreground mb-2">🚀 Get Your Bot Running in 3 Easy Steps</h3>
-                <p className="text-muted-foreground">Follow these simple steps to get your TREKKER-MD bot up and running</p>
+          <Card className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200 dark:border-slate-700 shadow-xl">
+            <CardContent className="p-8">
+              <div className="text-center mb-8">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4">
+                  <span className="text-white text-2xl">🚀</span>
+                </div>
+                <h3 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-3">
+                  Get Your Bot Running in 3 Easy Steps
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
+                  Follow these simple steps to get your TREKKER-MD bot up and running
+                </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 {/* Step 1: Generate Session ID */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-blue-200 dark:border-blue-700">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">1</div>
-                    <h4 className="font-semibold text-foreground mb-2">Generate Session ID</h4>
-                    <p className="text-sm text-muted-foreground mb-4">Get fresh WhatsApp credentials for your bot</p>
-                    <Button 
-                      onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
-                      variant="outline"
-                      className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
-                      data-testid="dashboard-generate-session"
-                    >
-                      <i className="fas fa-key mr-2"></i>
-                      Generate Session ID
-                    </Button>
+                <div className="group relative">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">1</div>
+                      <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-lg">Generate Session ID</h4>
+                      <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">Get fresh WhatsApp credentials for your bot</p>
+                      <Button 
+                        onClick={() => window.open('https://dc693d3f-99a0-4944-94cc-6b839418279c.e1-us-east-azure.choreoapps.dev/', '_blank')}
+                        className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white border-none shadow-lg hover:shadow-xl transition-all duration-300"
+                        data-testid="dashboard-generate-session"
+                      >
+                        <i className="fas fa-key mr-2"></i>
+                        Generate Session ID
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Step 2: Register Bot */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-green-200 dark:border-green-700">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">2</div>
-                    <h4 className="font-semibold text-foreground mb-2">Register Your Bot</h4>
-                    <p className="text-sm text-muted-foreground mb-4">Upload credentials and register your bot instance</p>
-                    <Button 
-                      onClick={() => setShowGuestRegistration(true)}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white"
-                      data-testid="dashboard-register-bot"
-                    >
-                      <i className="fas fa-plus mr-2"></i>
-                      Register Bot
-                    </Button>
+                <div className="group relative">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">2</div>
+                      <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-lg">Register Your Bot</h4>
+                      <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">Upload credentials and register your bot instance</p>
+                      <Button 
+                        onClick={() => setShowGuestRegistration(true)}
+                        className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white border-none shadow-lg hover:shadow-xl transition-all duration-300"
+                        data-testid="dashboard-register-bot"
+                      >
+                        <i className="fas fa-plus mr-2"></i>
+                        Register Bot
+                      </Button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Step 3: Pay & Approve */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-purple-200 dark:border-purple-700">
-                  <div className="text-center">
-                    <div className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center mx-auto mb-3 font-bold text-lg">3</div>
-                    <h4 className="font-semibold text-foreground mb-2">Pay & Approve</h4>
-                    <p className="text-sm text-muted-foreground mb-4">Complete payment for instant bot approval</p>
-                    <Button 
-                      onClick={() => setShowStkPushModal(true)}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white"
-                      data-testid="dashboard-pay-approve"
-                    >
-                      <i className="fas fa-credit-card mr-2"></i>
-                      Pay & Approve Bot
-                    </Button>
+                <div className="group relative">
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-lg hover:shadow-xl transition-all duration-300 h-full">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 font-bold text-xl shadow-lg group-hover:scale-110 transition-transform duration-300">3</div>
+                      <h4 className="font-bold text-slate-900 dark:text-white mb-3 text-lg">Pay & Approve</h4>
+                      <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">Complete payment for instant bot approval</p>
+                      <Button 
+                        onClick={() => setShowStkPushModal(true)}
+                        className="w-full bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white border-none shadow-lg hover:shadow-xl transition-all duration-300"
+                        data-testid="dashboard-pay-approve"
+                      >
+                        <i className="fas fa-credit-card mr-2"></i>
+                        Pay & Approve Bot
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Quick Access to Bot Management */}
-              <div className="mt-6 text-center">
+              <div className="text-center">
                 <Link href="/guest/bot-management">
                   <Button 
-                    variant="outline"
-                    className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-none hover:from-blue-700 hover:to-purple-700"
+                    size="lg"
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-none shadow-lg hover:shadow-xl transition-all duration-300 px-8 py-3"
                   >
-                    <i className="fas fa-robot mr-2"></i>
-                    Manage My Bots
+                    <i className="fas fa-robot mr-3 text-lg"></i>
+                    <span className="font-semibold">Manage My Bots</span>
                   </Button>
                 </Link>
               </div>
