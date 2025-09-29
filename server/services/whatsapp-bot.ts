@@ -8,7 +8,7 @@ import makeWASocket, {
 import * as Baileys from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import { storage } from '../storage';
-import { generateChatGPTResponse } from './openai';
+// import { generateChatGPTResponse } from './openai'; // Temporarily disabled - openai package removed
 import type { BotInstance } from '@shared/schema';
 import { join } from 'path';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -16,7 +16,7 @@ import { commandRegistry, type CommandContext } from './command-registry.js';
 import { AutoStatusService } from './auto-status.js';
 import { antideleteService } from './antidelete.js';
 import { getAntiViewOnceService } from './antiviewonce.js';
-import { SessionManager } from './session-manager';
+// import { SessionManager } from './session-manager'; // Temporarily disabled
 import './core-commands.js'; // Load core commands
 
 export class WhatsAppBot {
@@ -28,7 +28,7 @@ export class WhatsAppBot {
   private heartbeatInterval?: NodeJS.Timeout;
   private autoStatusService: AutoStatusService;
   private antiViewOnceService: any;
-  private sessionManager: SessionManager;
+  // private sessionManager: SessionManager; // Temporarily disabled
   private presenceInterval?: NodeJS.Timeout;
   private currentPresenceState: 'composing' | 'recording' = 'composing';
 
@@ -49,7 +49,7 @@ export class WhatsAppBot {
     this.antiViewOnceService = getAntiViewOnceService(botInstance.id);
 
     // Initialize session manager for chat session control
-    this.sessionManager = new SessionManager(botInstance.id);
+    // this.sessionManager = new SessionManager(botInstance.id); // Temporarily disabled
 
     // If credentials are provided, save them to the auth directory
     if (botInstance.credentials) {
@@ -581,8 +581,10 @@ export class WhatsAppBot {
       let response = command.response || `Command .${commandName} executed successfully.`;
 
       if (command.useChatGPT) {
-        const fullMessage = commandText.substring(commandName.length + 2); // Remove .command part
-        response = await generateChatGPTResponse(fullMessage, `User executed command: ${commandName}`);
+        // ChatGPT temporarily disabled - package removed
+        response = "AI features are temporarily disabled. Please contact administrator.";
+        // const fullMessage = commandText.substring(commandName.length + 2);
+        // response = await generateChatGPTResponse(fullMessage, `User executed command: ${commandName}`);
       }
 
       if (response && message.key.remoteJid) {
@@ -760,10 +762,12 @@ export class WhatsAppBot {
 
   private async handleChatGPTResponse(message: WAMessage, messageText: string) {
     try {
-      const response = await generateChatGPTResponse(
-        messageText,
-        `Bot: ${this.botInstance.name}, User: ${message.key.remoteJid}`
-      );
+      // ChatGPT temporarily disabled - package removed
+      const response = "AI features are temporarily disabled. Please contact administrator.";
+      // const response = await generateChatGPTResponse(
+      //   messageText,
+      //   `Bot: ${this.botInstance.name}, User: ${message.key.remoteJid}`
+      // );
 
       if (response && message.key.remoteJid) {
         await this.sock.sendMessage(message.key.remoteJid, { text: response });

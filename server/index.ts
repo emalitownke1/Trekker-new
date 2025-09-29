@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+// import { setupVite, serveStatic, log } from "./vite"; // Temporarily disabled - vite package removed
+function log(message: string, source = "express") { console.log(`${new Date().toLocaleTimeString()} [${source}] ${message}`); }
 import { initializeDatabase, getServerName } from "./db";
 import "./services/enhanced-commands";
 
@@ -191,7 +192,7 @@ app.use((req, res, next) => {
   });
 
   // Setup vite for development
-  await setupVite(app, server);
+  // await setupVite(app, server); // Temporarily disabled - vite package removed
 
   // Add explicit root route handler before setupVite
   app.get('/', async (req, res, next) => {
