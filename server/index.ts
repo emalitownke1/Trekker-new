@@ -3,6 +3,8 @@ import { registerRoutes } from "./routes";
 // import { setupVite, serveStatic, log } from "./vite"; // Temporarily disabled - vite package removed
 function log(message: string, source = "express") { console.log(`${new Date().toLocaleTimeString()} [${source}] ${message}`); }
 import { initializeDatabase, getServerName } from "./db";
+import { fileURLToPath } from 'url';
+import path from 'path';
 import "./services/enhanced-commands";
 
 // Guard to prevent double-start of monitoring
@@ -191,17 +193,26 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // Setup vite for development
-  // await setupVite(app, server); // Temporarily disabled - vite package removed
-
-  // Add explicit root route handler before setupVite
-  app.get('/', async (req, res, next) => {
-    // In production, let static file handler serve index.html
-    if (process.env.NODE_ENV === 'production') {
+  // Setup static file serving for client directory with base path /
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const clientPath = path.join(__dirname, '..', 'client');
+  
+  // Serve static files from client directory
+  app.use('/src', express.static(path.join(clientPath, 'src')));
+  app.use('/assets', express.static(path.join(clientPath, 'assets')));
+  
+  // Serve index.html for the root route and any client-side routes
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(clientPath, 'index.html'));
+  });
+  
+  // Handle client-side routing - serve index.html for any route that doesn't start with /api
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/health') || req.path.startsWith('/ws')) {
       return next();
     }
-    // In development, let Vite handle it
-    return next();
+    res.sendFile(path.join(clientPath, 'index.html'));
   });
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
