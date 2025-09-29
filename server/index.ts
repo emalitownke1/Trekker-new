@@ -5,6 +5,7 @@ function log(message: string, source = "express") { console.log(`${new Date().to
 import { initializeDatabase, getServerName } from "./db";
 import { fileURLToPath } from 'url';
 import path from 'path';
+import fs from 'fs';
 import "./services/enhanced-commands";
 
 // Guard to prevent double-start of monitoring
@@ -192,7 +193,7 @@ app.use((req, res, next) => {
   const distPath = path.join(__dirname, '..', 'dist', 'public');
   
   // Check if build files exist
-  if (!require('fs').existsSync(distPath)) {
+  if (!fs.existsSync(distPath)) {
     console.error('❌ Build files not found. Please run "yarn build" first.');
     process.exit(1);
   }
