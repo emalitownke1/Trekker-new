@@ -7,7 +7,7 @@
     "node": ">=20.6.0"
   },
   "scripts": {
-    "dev": "NODE_ENV=development yarn tsx server/index.ts",
+    "dev": "yarn install && NODE_ENV=development yarn tsx server/index.ts",
     "start": "yarn install && NODE_ENV=production yarn tsx server/index.ts",
     "build": "yarn vite build",
     "db:push": "yarn drizzle-kit push"
