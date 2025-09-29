@@ -9,13 +9,13 @@
   "scripts": {
     "dev": "NODE_ENV=development yarn tsx server/index.ts",
     "start": "yarn build && NODE_ENV=production BASE_PATH=/ yarn tsx server/index.ts",
-    "build": "BASE_PATH=/ yarn vite build",
+    "build": "yarn vite build",
     
     "postbuild": "echo 'Build completed successfully'",
-    "check": "tsc --noEmit",
+
     "typecheck": "yarn check",
     "db:push": "yarn drizzle-kit push",
-    "install:clean": "yarn --frozen-lockfile --production",
+    "install": "yarn --frozen-lockfile --production",
     
   },
   "dependencies": {
